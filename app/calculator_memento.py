@@ -98,3 +98,8 @@ class MementoCaretaker:
     def can_redo(self) -> bool:
         """Whether there is at least one state to redo to."""
         return len(self._redo_stack) > 0
+
+    @property
+    def stack_sizes(self) -> tuple[int, int]:
+        """Return (undo_stack_size, redo_stack_size)."""
+        return len(self._undo_stack), len(self._redo_stack)

@@ -54,11 +54,67 @@ class TestCalculatorREPL:
         calculator.process_input("add 5 3")
         assert len(calculator.history) == 1
 
-        calculator.process_input("undo")
+        undo_msg = calculator.process_input("undo")
         assert len(calculator.history) == 0
+        assert "Undo successful" in undo_msg
+        assert "0 calculation(s)" in undo_msg
+
+        redo_msg = calculator.process_input("redo")
+        assert len(calculator.history) == 1
+        assert "Redo successful" in redo_msg
+        assert "1 calculation(s)" in redo_msg
+
+    def test_undo_nothing(self, calculator: Calculator) -> None:
+        """Undo when stack is empty returns 'Nothing to undo'."""
+        msg = calculator.process_input("undo")
+        assert "Nothing to undo" in msg
+
+    def test_redo_nothing(self, calculator: Calculator) -> None:
+        """Redo when stack is empty returns 'Nothing to redo'."""
+        msg = calculator.process_input("redo")
+        assert "Nothing to redo" in msg
+
+    def test_failed_calc_does_not_pollute_undo_stack(self, calculator: Calculator) -> None:
+        """A failed calculation (divide by zero) must NOT add to the undo stack."""
+        # With no prior calculations, undo stack should be empty initially
+        initial_undo, _ = calculator.caretaker.stack_sizes
+
+        # Attempt a divide-by-zero (should fail)
+        calculator.process_input("divide 5 0")
+
+        # Undo stack size must not have grown
+        after_undo, _ = calculator.caretaker.stack_sizes
+        assert after_undo == initial_undo
+
+    def test_undo_redo_after_multiple_calcs(self, calculator: Calculator) -> None:
+        """Can walk back through several calculations with repeated undo."""
+        calculator.process_input("add 1 1")
+        calculator.process_input("add 2 2")
+        calculator.process_input("add 3 3")
+        assert len(calculator.history) == 3
+
+        calculator.process_input("undo")
+        assert len(calculator.history) == 2
+
+        calculator.process_input("undo")
+        assert len(calculator.history) == 1
 
         calculator.process_input("redo")
+        assert len(calculator.history) == 2
+
+    def test_redo_after_clear_undo(self, calculator: Calculator) -> None:
+        """Redo restores history after a clear+undo sequence."""
+        calculator.process_input("add 5 3")
         assert len(calculator.history) == 1
+
+        calculator.process_input("clear")
+        assert len(calculator.history) == 0
+
+        calculator.process_input("undo")
+        assert len(calculator.history) == 1
+
+        calculator.process_input("redo")
+        assert len(calculator.history) == 0
 
     def test_invalid_input(self, calculator: Calculator) -> None:
         """Invalid commands/operands return error messages."""

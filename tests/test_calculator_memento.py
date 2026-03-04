@@ -182,3 +182,128 @@ class TestUndoRedoInteraction:
 
         caretaker.undo()  # back to 0 rows
         assert len(history) == 0
+
+
+# ---------------------------------------------------------------------------
+# MementoCaretaker — stack_sizes
+# ---------------------------------------------------------------------------
+
+
+class TestStackSizes:
+    """Tests for the stack_sizes property."""
+
+    def test_initial_stack_sizes(self, caretaker: MementoCaretaker) -> None:
+        """Both stacks start empty."""
+        assert caretaker.stack_sizes == (0, 0)
+
+    def test_undo_stack_grows_on_save(
+        self,
+        caretaker: MementoCaretaker,
+        history: CalculationHistory,
+        sample_calc: Calculation,
+    ) -> None:
+        """Undo stack grows with each save; redo stack starts empty."""
+        caretaker.save()
+        history.add(sample_calc)
+        assert caretaker.stack_sizes == (1, 0)
+
+        caretaker.save()
+        assert caretaker.stack_sizes == (2, 0)
+
+    def test_redo_stack_grows_on_undo(
+        self,
+        caretaker: MementoCaretaker,
+        history: CalculationHistory,
+        sample_calc: Calculation,
+    ) -> None:
+        """Redo stack grows with each undo."""
+        caretaker.save()
+        history.add(sample_calc)
+        caretaker.undo()
+        assert caretaker.stack_sizes == (0, 1)
+
+    def test_stack_sizes_after_full_cycle(
+        self,
+        caretaker: MementoCaretaker,
+        history: CalculationHistory,
+        sample_calc: Calculation,
+        sample_calc2: Calculation,
+    ) -> None:
+        """After full undo/redo cycle stacks balance correctly."""
+        caretaker.save()          # snap 0 (empty)
+        history.add(sample_calc)
+        caretaker.save()          # snap 1 (1 row)
+        history.add(sample_calc2)
+
+        # undo twice
+        caretaker.undo()
+        caretaker.undo()
+        undo_sz, redo_sz = caretaker.stack_sizes
+        assert undo_sz == 0
+        assert redo_sz == 2
+
+        # redo once
+        caretaker.redo()
+        undo_sz, redo_sz = caretaker.stack_sizes
+        assert undo_sz == 1
+        assert redo_sz == 1
+
+
+# ---------------------------------------------------------------------------
+# Undo → Redo multi-step chain
+# ---------------------------------------------------------------------------
+
+
+class TestUndoRedoChain:
+    """Walk multiple states backward and forward."""
+
+    def test_undo_then_redo_chain(
+        self,
+        caretaker: MementoCaretaker,
+        history: CalculationHistory,
+        sample_calc: Calculation,
+        sample_calc2: Calculation,
+    ) -> None:
+        """Can undo two steps then redo them both in order."""
+        caretaker.save()          # state 0: empty
+        history.add(sample_calc)
+        caretaker.save()          # state 1: 1 row
+        history.add(sample_calc2)
+        assert len(history) == 2
+
+        # Undo back to 1 row
+        assert caretaker.undo() is True
+        assert len(history) == 1
+
+        # Undo back to empty
+        assert caretaker.undo() is True
+        assert len(history) == 0
+
+        # Redo forward to 1 row
+        assert caretaker.redo() is True
+        assert len(history) == 1
+
+        # Redo forward to 2 rows
+        assert caretaker.redo() is True
+        assert len(history) == 2
+
+        # Nothing left to redo
+        assert caretaker.redo() is False
+
+    def test_new_action_after_undo_clears_redo(
+        self,
+        caretaker: MementoCaretaker,
+        history: CalculationHistory,
+        sample_calc: Calculation,
+        sample_calc2: Calculation,
+    ) -> None:
+        """Performing a new save after an undo clears the redo stack."""
+        caretaker.save()
+        history.add(sample_calc)
+        caretaker.undo()
+        assert caretaker.can_redo is True
+
+        # New action: save again (simulating a new calculation)
+        caretaker.save()
+        history.add(sample_calc2)
+        assert caretaker.can_redo is False

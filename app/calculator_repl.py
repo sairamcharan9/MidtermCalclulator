@@ -172,14 +172,14 @@ class Calculator:
             return msg
 
         try:
-            # Save state before mutation (for undo)
-            self.caretaker.save()
             calc = CalculationFactory.create(operand_a, operand_b, operation_name, self.config.precision)
         except CalculationError as exc:
             msg = f"Error: {exc}"
             print(msg)
             return msg
 
+        # Save state AFTER successful calculation, BEFORE adding to history
+        self.caretaker.save()
         self.history.add(calc)
         result_msg = f"Result: {calc}"
         print(result_msg)
@@ -254,7 +254,7 @@ class Calculator:
     def _handle_undo(self) -> str:
         """Undo the last action."""
         if self.caretaker.undo():
-            msg = "Undo successful."
+            msg = f"Undo successful. History now has {len(self.history)} calculation(s)."
         else:
             msg = "Nothing to undo."
         print(msg)
@@ -263,7 +263,7 @@ class Calculator:
     def _handle_redo(self) -> str:
         """Redo the last undone action."""
         if self.caretaker.redo():
-            msg = "Redo successful."
+            msg = f"Redo successful. History now has {len(self.history)} calculation(s)."
         else:
             msg = "Nothing to redo."
         print(msg)
