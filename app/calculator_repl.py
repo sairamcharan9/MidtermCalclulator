@@ -33,6 +33,7 @@ from app.history import (
     LoggingObserver,
 )
 from app.input_validators import validate_input_parts
+from app.logger import get_logger, reconfigure_logging
 
 
 class Calculator:
@@ -47,8 +48,8 @@ class Calculator:
         caretaker: The ``MementoCaretaker`` for undo / redo.
     """
 
-    SPECIAL_COMMANDS = ("help", "?", "history", "clear", "exit",
-                        "undo", "redo", "save", "load")
+    SPECIAL_COMMANDS = ("help", "?", "history", "clear", "exit", "greet",
+                        "undo", "redo", "save", "load",)
 
     def __init__(self, env_path: str | None = None) -> None:
         """Initialize the calculator subsystems.
@@ -61,7 +62,17 @@ class Calculator:
             self.config = CalculatorConfig(env_path=env_path)
         except ConfigurationError:  # pragma: no cover
             # Fall back to safe defaults if config is broken
-            self.config = CalculatorConfig() # Will use defaults if .env is missing or broken
+            self.config = CalculatorConfig()
+
+        # -- Centralized logging (must happen before any logger usage) ------
+        reconfigure_logging(
+            log_dir=self.config.log_dir,
+            log_file=self.config.log_file,
+            encoding=self.config.default_encoding,
+        )
+        self._log = get_logger("repl")
+        self._log.info("Calculator initializing | log_dir=%s | history_dir=%s | precision=%s",
+                       self.config.log_dir, self.config.history_dir, self.config.precision)
 
         # -- History (pandas) -----------------------------------------------
         self.history = CalculationHistory(
@@ -86,7 +97,9 @@ class Calculator:
         self.caretaker = MementoCaretaker(self.history)
 
         # -- Auto-load existing history -------------------------------------
-        self.history.load_from_csv()
+        loaded = self.history.load_from_csv()
+        if loaded:
+            self._log.info("Auto-loaded %d calculation(s) from history CSV.", loaded)
 
     # ------------------------------------------------------------------
     # REPL
@@ -132,6 +145,7 @@ class Calculator:
             return ""
 
         command = parts[0]
+        self._log.debug("User input received | command=%s", command)
 
         # --- Handle special commands ---
         if command in ("help", "?"):
@@ -148,10 +162,13 @@ class Calculator:
             return self._handle_save()
         if command == "load":
             return self._handle_load()
+        if command == "greet":
+            return self._handle_greet()
 
         # --- LBYL: validate format ---
         validation_error = validate_input_parts(parts, self.config.max_input_value)
         if validation_error:
+            self._log.warning("Invalid input | reason=%s | raw=%r", validation_error, user_input)
             print(validation_error)
             return validation_error
 
@@ -168,6 +185,7 @@ class Calculator:
                 f"Error: '{raw_a}' and/or '{raw_b}' are not valid numbers. "
                 "Please enter numeric values."
             )
+            self._log.warning("Non-numeric operands | a=%r | b=%r", raw_a, raw_b)
             print(msg)
             return msg
 
@@ -175,6 +193,8 @@ class Calculator:
             calc = CalculationFactory.create(operand_a, operand_b, operation_name, self.config.precision)
         except CalculationError as exc:
             msg = f"Error: {exc}"
+            self._log.error("Calculation failed | op=%s | a=%s | b=%s | error=%s",
+                            operation_name, operand_a, operand_b, exc)
             print(msg)
             return msg
 
@@ -182,6 +202,8 @@ class Calculator:
         self.caretaker.save()
         self.history.add(calc)
         result_msg = f"Result: {calc}"
+        self._log.info("Calculation success | op=%s | a=%s | b=%s | result=%s",
+                       operation_name, operand_a, operand_b, calc.result)
         print(result_msg)
         return result_msg
 
@@ -219,7 +241,8 @@ class Calculator:
             "  redo       - Redo last undone action\n"
             "  save       - Save history to CSV\n"
             "  load       - Load history from CSV\n"
-            "  exit       - Exit the calculator"
+            "  exit       - Exit the calculator\n"
+            "  greet      - Display a greeting"
         )
         print(help_text)
         return help_text
@@ -245,9 +268,11 @@ class Calculator:
 
     def _handle_clear(self) -> str:
         """Clear the calculation history."""
+        prev_count = len(self.history)
         self.caretaker.save()
         self.history.clear()
         msg = "History cleared."
+        self._log.info("History cleared | previous_count=%d", prev_count)
         print(msg)
         return msg
 
@@ -255,8 +280,10 @@ class Calculator:
         """Undo the last action."""
         if self.caretaker.undo():
             msg = f"Undo successful. History now has {len(self.history)} calculation(s)."
+            self._log.info("Undo | history_size=%d", len(self.history))
         else:
             msg = "Nothing to undo."
+            self._log.debug("Undo requested but stack is empty.")
         print(msg)
         return msg
 
@@ -264,8 +291,10 @@ class Calculator:
         """Redo the last undone action."""
         if self.caretaker.redo():
             msg = f"Redo successful. History now has {len(self.history)} calculation(s)."
+            self._log.info("Redo | history_size=%d", len(self.history))
         else:
             msg = "Nothing to redo."
+            self._log.debug("Redo requested but stack is empty.")
         print(msg)
         return msg
 
@@ -273,6 +302,7 @@ class Calculator:
         """Save history to CSV."""
         path = self.history.save_to_csv()
         msg = f"History saved to '{path}'."
+        self._log.info("History saved | path=%s | rows=%d", path, len(self.history))
         print(msg)
         return msg
 
@@ -280,6 +310,14 @@ class Calculator:
         """Load history from CSV."""
         count = self.history.load_from_csv()
         msg = f"Loaded {count} calculation(s) from '{self.history.csv_path}'."
+        self._log.info("History loaded | path=%s | rows=%d", self.history.csv_path, count)
+        print(msg)
+        return msg
+
+    def _handle_greet(self) -> str:
+        """Display a greeting message."""
+        msg = "Hello! Welcome to the calculator."
+        self._log.info("Displayed greeting")
         print(msg)
         return msg
 

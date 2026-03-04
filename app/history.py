@@ -23,6 +23,7 @@ from datetime import datetime
 import pandas as pd
 
 from app.calculation import Calculation
+from app.logger import get_logger
 
 
 # ---------------------------------------------------------------------------
@@ -43,28 +44,32 @@ class CalculationObserver(ABC):
 
 
 class LoggingObserver(CalculationObserver):
-    """Observer that logs each new calculation using Python's logging module."""
+    """Observer that logs each new calculation at INFO level.
 
-    def __init__(self, log_dir: str = "logs", log_file: str = "calculator.log", encoding: str = "utf-8") -> None:
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+    Uses the centralized ``calculator.history`` child logger so all
+    log output flows through the shared file/stream handlers configured
+    by ``app.logger.configure_logging()``.
+    """
 
-        log_path = os.path.join(log_dir, log_file)
-
-        self.logger = logging.getLogger("calculator.history")
-        self.logger.setLevel(logging.INFO)
-
-        # Avoid adding multiple handlers if the observer is re-instantiated
-        if not self.logger.handlers:
-            handler = logging.FileHandler(log_path, encoding=encoding)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+    def __init__(
+        self,
+        log_dir: str = "logs",
+        log_file: str = "calculator.log",
+        encoding: str = "utf-8",
+    ) -> None:
+        # Keep parameters for backward-compatibility; actual handler
+        # setup is centralised in configure_logging().
+        self.logger = get_logger("history")
 
     def on_calculation(self, calculation: Calculation) -> None:
-        """Log the calculation via the logging module."""
-        msg = f"Operation: {calculation.operation_name}, Operands: ({calculation.operand_a}, {calculation.operand_b}), Result: {calculation.result}"
-        self.logger.info(msg)
+        """Log each successful calculation at INFO level."""
+        self.logger.info(
+            "Calculation | op=%s | a=%s | b=%s | result=%s",
+            calculation.operation_name,
+            calculation.operand_a,
+            calculation.operand_b,
+            calculation.result,
+        )
 
 
 class AutoSaveObserver(CalculationObserver):
