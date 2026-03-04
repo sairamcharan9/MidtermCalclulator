@@ -16,6 +16,7 @@ The commands include:
 - `load`: Manually load the history from a CSV file.
 """
 
+from colorama import Fore
 from app.commands import command
 
 
@@ -25,7 +26,7 @@ def history_command(calculator) -> str:
     rows = calculator.history.get_all()
     if not rows:
         msg = "No calculations in history."
-        print(msg)
+        print(f"{Fore.YELLOW}{msg}")
         return msg
 
     lines = ["=== Calculation History ==="]
@@ -33,7 +34,7 @@ def history_command(calculator) -> str:
         lines.append(f"  {i}. {row['operand_a']} {row['operation']} {row['operand_b']} = {row['result']}")
     lines.append(f"\nTotal: {len(rows)} calculation(s)")
     history_text = "\n".join(lines)
-    print(history_text)
+    print(f"{Fore.BLUE}{history_text}")
     return history_text
 
 
@@ -42,14 +43,14 @@ def clear_command(calculator) -> str:
     """Clears the calculation history, with undo support."""
     if len(calculator.history) == 0:
         msg = "History is already empty."
-        print(msg)
+        print(f"{Fore.YELLOW}{msg}")
         return msg
     
     calculator.caretaker.save()
     calculator.history.clear()
     msg = "History cleared."
     calculator._log.info("History cleared.")
-    print(msg)
+    print(f"{Fore.GREEN}{msg}")
     return msg
 
 
@@ -59,10 +60,11 @@ def undo_command(calculator) -> str:
     if calculator.caretaker.undo():
         msg = f"Undo successful. History now contains {len(calculator.history)} calculation(s)."
         calculator._log.info("Undo successful. History size: %d", len(calculator.history))
+        print(f"{Fore.GREEN}{msg}")
     else:
         msg = "Nothing to undo."
         calculator._log.info("Undo requested, but undo stack is empty.")
-    print(msg)
+        print(f"{Fore.YELLOW}{msg}")
     return msg
 
 
@@ -72,10 +74,11 @@ def redo_command(calculator) -> str:
     if calculator.caretaker.redo():
         msg = f"Redo successful. History now contains {len(calculator.history)} calculation(s)."
         calculator._log.info("Redo successful. History size: %d", len(calculator.history))
+        print(f"{Fore.GREEN}{msg}")
     else:
         msg = "Nothing to redo."
         calculator._log.info("Redo requested, but redo stack is empty.")
-    print(msg)
+        print(f"{Fore.YELLOW}{msg}")
     return msg
 
 
@@ -85,7 +88,7 @@ def save_command(calculator) -> str:
     path = calculator.history.save_to_csv()
     msg = f"History saved to '{path}'."
     calculator._log.info("History manually saved to %s (%d rows)", path, len(calculator.history))
-    print(msg)
+    print(f"{Fore.GREEN}{msg}")
     return msg
 
 
@@ -95,5 +98,5 @@ def load_command(calculator) -> str:
     count = calculator.history.load_from_csv()
     msg = f"Loaded {count} calculation(s) from '{calculator.history.csv_path}'."
     calculator._log.info("History loaded from %s, containing %d rows", calculator.history.csv_path, count)
-    print(msg)
+    print(f"{Fore.GREEN}{msg}")
     return msg

@@ -19,8 +19,11 @@ from __future__ import annotations
 import logging
 
 from decimal import Decimal, InvalidOperation
-
 from app.calculation import Calculation, CalculationFactory
+import colorama
+from colorama import Fore
+
+colorama.init(autoreset=True)
 from app.calculator_config import CalculatorConfig
 from app.calculator_memento import MementoCaretaker
 from app.command_loader import command_manager
@@ -111,14 +114,14 @@ class Calculator:
             try:
                 user_input = input("\n>>> ").strip()
             except (EOFError, KeyboardInterrupt):
-                print("\nGoodbye!")
+                print(f"{Fore.YELLOW}\nGoodbye!")
                 break
 
             if not user_input:
                 continue
 
             if user_input.lower() == "exit":
-                print("Goodbye!")
+                print(f"{Fore.YELLOW}Goodbye!")
                 break
 
             self.process_input(user_input)
@@ -166,13 +169,15 @@ class Calculator:
         validation_error = validate_input_parts(parts, self.config.max_input_value)
         if validation_error:
             self._log.warning("Invalid input: %s (raw: '%s')", validation_error, user_input)
-            print(validation_error)
+            print(f"{Fore.RED}{validation_error}")
             return validation_error
 
     def _handle_arithmetic_command(self, command_obj, parts):
         """Handles the execution of arithmetic commands."""
         if len(parts) != 3:
-            return f"Error: Invalid number of arguments for {parts[0]}. Usage: {command_obj.usage}"
+            msg = f"Error: Invalid number of arguments for {parts[0]}. Usage: {command_obj.usage}"
+            print(f"{Fore.RED}{msg}")
+            return msg
 
         operation_name, raw_a, raw_b = parts[0], parts[1], parts[2]
 
@@ -184,12 +189,12 @@ class Calculator:
         except InvalidOperation:
             msg = f"Error: Invalid number input. '{raw_a}' or '{raw_b}' is not a valid number."
             self._log.warning("Invalid number input: a='%s', b='%s'", raw_a, raw_b)
-            print(msg)
+            print(f"{Fore.RED}{msg}")
             return msg
         except CalculationError as e:
             msg = f"Error: {e}"
-            self._log.error("Calculation error for %s(%s, %s): %s", operation_name, raw_a, raw_b, e)
-            print(msg)
+            self._log.error("Calculation error for %s(%s, %s): %s", operation_name, operand_a, operand_b, e)
+            print(f"{Fore.RED}{msg}")
             return msg
 
         # After a successful calculation, save state and update history.
@@ -197,16 +202,16 @@ class Calculator:
         self.history.add(calc)
         result_msg = f"Result: {calc}"
         self._log.info("Calculation successful: %s -> %s", calc, calc.result)
-        print(result_msg)
+        print(f"{Fore.GREEN}{result_msg}")
         return result_msg
 
     @staticmethod
     def _print_welcome() -> None:  # pragma: no cover
         """Prints the welcome banner when the REPL starts."""
         print(
-            "================================\n"
-            "   Welcome to the Calculator!\n"
-            "================================\n"
-            "Type 'help' for available commands.\n"
-            "Type 'exit' to quit."
+            f"{Fore.MAGENTA}================================\n"
+            f"   Welcome to the Calculator!\n"
+            f"================================\n"
+            f"{Fore.CYAN}Type 'help' for available commands.\n"
+            f"Type 'exit' to quit."
         )
