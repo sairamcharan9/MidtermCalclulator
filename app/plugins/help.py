@@ -6,6 +6,7 @@ Help Command Plugin
 This plugin provides the 'help' command, which dynamically generates a help
 message based on all registered commands in the CommandManager.
 """
+from colorama import Fore
 from app.command_loader import command_manager
 from app.commands import command
 
@@ -44,7 +45,7 @@ is organized into "Available Operations" and
 
     help_text += "\nExample Usage:\n  add 10 5\n  history\n  exit"
     
-    print(help_text)
+    print(f"{Fore.CYAN}{help_text}")
     return help_text
 
 # Register '?' as an alias for 'help'

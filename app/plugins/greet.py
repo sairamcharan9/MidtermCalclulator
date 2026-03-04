@@ -6,6 +6,7 @@ This plugin provides a simple 'greet' command to demonstrate the extensibility
 of the command system.
 """
 
+from colorama import Fore
 from app.commands import command
 
 
@@ -13,5 +14,5 @@ from app.commands import command
 def greet_command(*args, **kwargs) -> str:
     """Displays a simple greeting message."""
     msg = "Hello! Welcome to the calculator."
-    print(msg)
+    print(f"{Fore.MAGENTA}{msg}")
     return msg

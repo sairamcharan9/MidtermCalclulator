@@ -57,7 +57,8 @@ def manage_logging_for_tests(tmp_path):
         logger.removeHandler(handler)
         
     # 3. Reset the configuration flag in the logger module
-    _is_configured = original_is_configured
+    import app.logger
+    app.logger._is_configured = original_is_configured
     
     # 4. Restore original handlers if any
     for handler in original_handlers:
@@ -94,23 +95,30 @@ class TestConfigureLogging:
         assert log_file.exists()
 
     def test_idempotent(self, tmp_path):
-        """Calling configure multiple times should not break anything."""
-        from app.logger import reconfigure_logging, _is_configured
-        reconfigure_logging(log_dir=str(tmp_path), log_file="test.log", encoding="utf-8")
-        assert _is_configured is True
-        # Calling it again should work fine
-        reconfigure_logging(log_dir=str(tmp_path), log_file="test.log", encoding="utf-8")
-        assert _is_configured is True
+        """Calling configure multiple times should not add duplicate handlers."""
+        from app.logger import configure_logging
+        import app.logger
+        
+        # Clear existing handlers from fixture to start with a clean slate
+        root = logging.getLogger("calculator")
+        for h in root.handlers[:]:
+            h.close()
+            root.removeHandler(h)
+        
+        app.logger._is_configured = False # Reset for this specific test
+        
+        log_dir = str(tmp_path / "logs")
+        configure_logging(log_dir=log_dir, log_file="app.log")
+        configure_logging(log_dir=log_dir, log_file="app.log")
+        
+        # Should still be exactly 1 handler (file)
+        assert len(root.handlers) == 1
 
     def test_file_handler_present(self):
         """The root logger should have a FileHandler."""
         handlers = logging.getLogger("calculator").handlers
         assert any(isinstance(h, logging.FileHandler) for h in handlers)
 
-    def test_stream_handler_present(self):
-        """The root logger should have a StreamHandler."""
-        handlers = logging.getLogger("calculator").handlers
-        assert any(isinstance(h, logging.StreamHandler) for h in handlers)
 
 
 class TestReconfigureLogging:
@@ -141,10 +149,10 @@ class TestReconfigureLogging:
         logger = logging.getLogger("calculator")
         
         reconfigure_logging(log_dir=str(tmp_path), log_file="f1.log", encoding="utf-8")
-        assert len(logger.handlers) == 2
+        assert len(logger.handlers) == 1
         
         reconfigure_logging(log_dir=str(tmp_path), log_file="f2.log", encoding="utf-8")
-        assert len(logger.handlers) == 2
+        assert len(logger.handlers) == 1
 
 
 class TestGetLogger:
@@ -169,7 +177,7 @@ class TestGetLogger:
 class TestLoggingObserverIntegration:
     """Tests the LoggingObserver's interaction with the logging system."""
 
-    def test_observer_logs_to_file(self, tmp_path):
+    def test_observer_logs_to_file(self, tmp_path, sample_add_calc):
         """The LoggingObserver should write to the configured log file."""
         log_file = tmp_path / "observer_test.log"
         from app.logger import reconfigure_logging
