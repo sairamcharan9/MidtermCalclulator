@@ -72,11 +72,7 @@ def configure_logging(
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
-    # Stream handler: Outputs WARNING and higher to the console.
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.WARNING)
-    stream_handler.setFormatter(formatter)
-    root_logger.addHandler(stream_handler)
+
 
     _is_configured = True
 

@@ -20,6 +20,11 @@ import logging
 
 from decimal import Decimal, InvalidOperation
 
+import colorama
+from colorama import Fore
+
+colorama.init(autoreset=True)
+
 from app.calculation import CalculationFactory
 from app.calculator_config import CalculatorConfig
 from app.calculator_memento import MementoCaretaker
@@ -113,14 +118,14 @@ class Calculator:
             try:
                 user_input = input("\n>>> ").strip()
             except (EOFError, KeyboardInterrupt):
-                print("\nGoodbye!")
+                print(f"{Fore.YELLOW}\nGoodbye!")
                 break
 
             if not user_input:
                 continue
 
             if user_input.lower() == "exit":
-                print("Goodbye!")
+                print(f"{Fore.YELLOW}Goodbye!")
                 break
 
             self.process_input(user_input)
@@ -161,7 +166,7 @@ class Calculator:
         validation_error = validate_input_parts(parts, self.config.max_input_value)
         if validation_error:
             self._log.warning("Invalid input: %s (raw: '%s')", validation_error, user_input)
-            print(validation_error)
+            print(f"{Fore.RED}{validation_error}")
             return validation_error
 
         operation_name, raw_a, raw_b = parts[0], parts[1], parts[2]
@@ -173,12 +178,12 @@ class Calculator:
         except InvalidOperation:
             msg = f"Error: Invalid number input. '{raw_a}' or '{raw_b}' is not a valid number."
             self._log.warning("Invalid number input: a='%s', b='%s'", raw_a, raw_b)
-            print(msg)
+            print(f"{Fore.RED}{msg}")
             return msg
         except CalculationError as e:
             msg = f"Error: {e}"
             self._log.error("Calculation error for %s(%s, %s): %s", operation_name, operand_a, operand_b, e)
-            print(msg)
+            print(f"{Fore.RED}{msg}")
             return msg
 
         # After a successful calculation, save state and update history.
@@ -186,7 +191,7 @@ class Calculator:
         self.history.add(calc)
         result_msg = f"Result: {calc}"
         self._log.info("Calculation successful: %s -> %s", calc, calc.result)
-        print(result_msg)
+        print(f"{Fore.GREEN}{result_msg}")
         return result_msg
 
     def _handle_help(self) -> str:
@@ -207,7 +212,7 @@ class Calculator:
             "  save/load  - Manually save or load history\n"
             "  exit       - Exit the application"
         )
-        print(help_text)
+        print(f"{Fore.CYAN}{help_text}")
         return help_text
 
     def _handle_history(self) -> str:
@@ -215,7 +220,7 @@ class Calculator:
         rows = self.history.get_all()
         if not rows:
             msg = "No calculations in history."
-            print(msg)
+            print(f"{Fore.YELLOW}{msg}")
             return msg
 
         lines = ["=== Calculation History ==="]
@@ -223,21 +228,21 @@ class Calculator:
             lines.append(f"  {i}. {row['operand_a']} {row['operation']} {row['operand_b']} = {row['result']}")
         lines.append(f"\nTotal: {len(rows)} calculation(s)")
         history_text = "\n".join(lines)
-        print(history_text)
+        print(f"{Fore.BLUE}{history_text}")
         return history_text
 
     def _handle_clear(self) -> str:
         """Clears the calculation history, with undo support."""
         if len(self.history) == 0:
             msg = "History is already empty."
-            print(msg)
+            print(f"{Fore.YELLOW}{msg}")
             return msg
         
         self.caretaker.save()
         self.history.clear()
         msg = "History cleared."
         self._log.info("History cleared.")
-        print(msg)
+        print(f"{Fore.GREEN}{msg}")
         return msg
 
     def _handle_undo(self) -> str:
@@ -245,10 +250,11 @@ class Calculator:
         if self.caretaker.undo():
             msg = f"Undo successful. History now contains {len(self.history)} calculation(s)."
             self._log.info("Undo successful. History size: %d", len(self.history))
+            print(f"{Fore.GREEN}{msg}")
         else:
             msg = "Nothing to undo."
             self._log.info("Undo requested, but undo stack is empty.")
-        print(msg)
+            print(f"{Fore.YELLOW}{msg}")
         return msg
 
     def _handle_redo(self) -> str:
@@ -256,10 +262,11 @@ class Calculator:
         if self.caretaker.redo():
             msg = f"Redo successful. History now contains {len(self.history)} calculation(s)."
             self._log.info("Redo successful. History size: %d", len(self.history))
+            print(f"{Fore.GREEN}{msg}")
         else:
             msg = "Nothing to redo."
             self._log.info("Redo requested, but redo stack is empty.")
-        print(msg)
+            print(f"{Fore.YELLOW}{msg}")
         return msg
 
     def _handle_save(self) -> str:
@@ -267,7 +274,7 @@ class Calculator:
         path = self.history.save_to_csv()
         msg = f"History saved to '{path}'."
         self._log.info("History manually saved to %s (%d rows)", path, len(self.history))
-        print(msg)
+        print(f"{Fore.GREEN}{msg}")
         return msg
 
     def _handle_load(self) -> str:
@@ -275,23 +282,23 @@ class Calculator:
         count = self.history.load_from_csv()
         msg = f"Loaded {count} calculation(s) from '{self.history.csv_path}'."
         self._log.info("History loaded from %s, containing %d rows", self.history.csv_path, count)
-        print(msg)
+        print(f"{Fore.GREEN}{msg}")
         return msg
 
     def _handle_greet(self) -> str:
         """Displays a simple greeting message."""
         msg = "Hello! Welcome to the calculator."
         self._log.info("Displayed greeting message.")
-        print(msg)
+        print(f"{Fore.MAGENTA}{msg}")
         return msg
 
     @staticmethod
     def _print_welcome() -> None:  # pragma: no cover
         """Prints the welcome banner when the REPL starts."""
         print(
-            "================================\n"
-            "   Welcome to the Calculator!\n"
-            "================================\n"
-            "Type 'help' for available commands.\n"
-            "Type 'exit' to quit."
+            f"{Fore.MAGENTA}================================\n"
+            f"   Welcome to the Calculator!\n"
+            f"================================\n"
+            f"{Fore.CYAN}Type 'help' for available commands.\n"
+            f"Type 'exit' to quit."
         )

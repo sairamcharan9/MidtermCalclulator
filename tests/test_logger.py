@@ -74,21 +74,14 @@ class TestConfigureLogging:
         logger_module.configure_logging(log_dir=log_dir, log_file="app.log")
         logger_module.configure_logging(log_dir=log_dir, log_file="app.log")
         root = logging.getLogger("calculator")
-        # Should still be exactly 2 handlers (file + stream)
-        assert len(root.handlers) == 2
+        # Should still be exactly 1 handler (file)
+        assert len(root.handlers) == 1
 
     def test_file_handler_present(self, log_path) -> None:
         """Root calculator logger has a FileHandler attached."""
         root = logging.getLogger("calculator")
         file_handlers = [h for h in root.handlers if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) == 1
-
-    def test_stream_handler_present(self, log_path) -> None:
-        """Root calculator logger has a StreamHandler attached."""
-        root = logging.getLogger("calculator")
-        stream_handlers = [h for h in root.handlers if isinstance(h, logging.StreamHandler)
-                           and not isinstance(h, logging.FileHandler)]
-        assert len(stream_handlers) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +105,7 @@ class TestReconfigureLogging:
         logger_module.configure_logging(log_dir=log_dir, log_file="a.log")
         logger_module.reconfigure_logging(log_dir=log_dir, log_file="b.log")
         root = logging.getLogger("calculator")
-        assert len(root.handlers) == 2
+        assert len(root.handlers) == 1
 
 
 # ---------------------------------------------------------------------------
