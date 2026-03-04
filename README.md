@@ -1,6 +1,35 @@
-# Advanced Calculator Application
+<div align="center">
+  <h1>🧮 Advanced Calculator Application</h1>
+  <p><i>A beautifully styled, fully-featured command-line calculator built with Python.</i></p>
 
-## Project Description
+  ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+  ![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)
+  ![Design Patterns](https://img.shields.io/badge/Design_Patterns-Facade_|_Observer_|_Strategy-purple.svg)
+</div>
+
+<br />
+
+## 📸 Showcase & REPL Demo
+
+Experience our intuitive, color-coded REPL interface in action. The application features robust syntax highlighting for commands, success messages, operational status, and errors natively leveraging `colorama` for a seamless user experience!
+
+<p align="center">
+  <img src="screenshots/image.png" width="45%" />
+  <img src="screenshots/image%20copy.png" width="45%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/image%20copy%202.png" width="45%" />
+  <img src="screenshots/image%20copy%203.png" width="45%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/image%20copy%204.png" width="91%" />
+</p>
+
+---
+
+## 📖 Project Description
 
 This project is a sophisticated command-line calculator application built with Python, showcasing the integration of advanced software design patterns to create a modular, extensible, and maintainable system. It moves beyond basic arithmetic to offer a rich feature set including persistent history, undo/redo functionality, and comprehensive logging, all configurable via environment variables.
 
