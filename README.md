@@ -96,9 +96,23 @@ Our automated workflow handles:
 
 ---
 
+## 👋 Contributing
+
+We welcome contributions to the Advanced Calculator Application! To ensure a smooth and effective collaboration, please follow these guidelines:
+
+### Bug Reports & Feature Requests
+
+- **Bug Reports**: If you find a bug, please open an issue on GitHub, providing a clear description, steps to reproduce, and expected behavior.
+- **Feature Requests**: We'd love to hear your ideas! Open an issue to propose new features or enhancements.
+
+### Code Contributions
+
+- Fork the repository and create a new branch for your feature or bug fix.
+- Ensure your code adheres to existing style guidelines and includes relevant tests.
+- Submit a pull request with a descriptive title and detailed explanation of your changes.
+
 ---
 
 <div align="center">
   <p>Developed with ❤️ for Advanced Software Development</p>
 </div>
-
