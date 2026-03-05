@@ -2,7 +2,7 @@
   <h1>🧮 Advanced Calculator Application</h1>
   <p><i>A beautifully styled, fully-featured command-line calculator built with Python.</i></p>
 
-  ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+  ![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)
   ![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)
   ![Design Patterns](https://img.shields.io/badge/Design_Patterns-Facade_|_Observer_|_Strategy_|_Memento-purple.svg)
 </div>
@@ -147,4 +147,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 <div align="center">
   <p>Developed with ❤️ for Advanced Software Development</p>
 </div>
-
