@@ -77,6 +77,16 @@ CALCULATOR_MAX_INPUT_VALUE=1e12
 
 ---
 
+## 🔮 Future Enhancements
+
+We are continuously working to improve the calculator application. Some of the planned future enhancements include:
+
+- **Plugin System**: Allow users to easily create and integrate custom command plugins.
+- **GUI Interface**: Develop a graphical user interface for a more visual interaction.
+- **Advanced Functions**: Implement more complex mathematical and scientific functions.
+
+---
+
 ## 🧪 Testing and Quality
 
 We maintain high code quality standards through comprehensive testing and CI/CD integration.
