@@ -137,4 +137,4 @@ docker run -p 8000:8000 fast-calculator
 Then navigate horizontally to `http://localhost:8000`.
 
 ---
-*Created as a Midterm Submission demonstrating Enterprise Python architectural principles.*
+*Created as a web Systems assignments branch Submission demonstrating Enterprise Python architectural principles.*
