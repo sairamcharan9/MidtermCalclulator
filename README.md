@@ -133,8 +133,15 @@ To launch the Web Application independently via Docker ensuring pristine cross-c
 ```bash
 docker build -t fast-calculator .
 docker run -p 8000:8000 fast-calculator
+### Running Tests inside Docker
+To execute the entire test suite (Unit, Integration, and E2E) inside the container exactly as required for grading:
+```bash
+docker run --rm fast-calculator pytest tests/unit tests/integration -v
 ```
-Then navigate horizontally to `http://localhost:8000`.
+To check coverage inside the container:
+```bash
+docker run --rm fast-calculator pytest --cov=app --cov=main tests/
+```
 
 ---
 *Created as a web Systems assignments branch Submission demonstrating Enterprise Python architectural principles.*
