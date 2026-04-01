@@ -40,7 +40,34 @@ Both interfaces share perfectly synced core mathematical logic, decoupled operat
 
 ---
 
-## 💻 Mode 1: The Interactive CLI (REPL)
+## 🌐 Mode 1: FastAPI Web Application
+
+To use the calculator via a beautiful, browser-based graphical interface, simply run `main.py` without any arguments.
+
+![FastAPI Web Application](screenshots/image%20copy%205.png)
+
+### Start the Server
+```bash
+python main.py
+```
+
+### Accessing the API & GUI
+- **Application GUI**: Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your favorite browser.
+- **Swagger Documentation**: View the auto-generated API specifications at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+### API Endpoint Examples
+You can interface directly with the FastAPI backend without using the GUI:
+```bash
+# Add two numbers
+curl -X POST http://127.0.0.1:8000/add -H "Content-Type: application/json" -d '{"a":"10","b":"5"}'
+
+# View History
+curl http://127.0.0.1:8000/history
+```
+
+---
+
+## 💻 Mode 2: The Interactive CLI (REPL)
 
 For developers who want a fast, interactive terminal calculator, you can launch the CLI mode.
 
@@ -72,33 +99,6 @@ Recalled A: 999
 
 >>> exit
 Goodbye!
-```
-
----
-
-## 🌐 Mode 2: FastAPI Web Application
-
-To use the calculator via a beautiful, browser-based graphical interface, simply run `main.py` without any arguments.
-
-![FastAPI Web Application](screenshots/image.png)
-
-### Start the Server
-```bash
-python main.py
-```
-
-### Accessing the API & GUI
-- **Application GUI**: Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your favorite browser.
-- **Swagger Documentation**: View the auto-generated API specifications at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-
-### API Endpoint Examples
-You can interface directly with the FastAPI backend without using the GUI:
-```bash
-# Add two numbers
-curl -X POST http://127.0.0.1:8000/add -H "Content-Type: application/json" -d '{"a":"10","b":"5"}'
-
-# View History
-curl http://127.0.0.1:8000/history
 ```
 
 ---
