@@ -103,23 +103,51 @@ Goodbye!
 
 ---
 
+## 🔐 Secure User Model
+
+The application includes a secure user management system built with **SQLAlchemy** and **Pydantic**.
+
+### Features
+- **SQLAlchemy User Model** with unique constraints on `username` and `email`, and bcrypt-hashed passwords.
+- **Pydantic Schemas**: `UserCreate` (registration) and `UserRead` (API response — excludes password hash).
+- **Password Hashing** using bcrypt via `passlib` with automatic salt generation.
+
+### User API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/users/` | Create a new user |
+| `GET` | `/users/{id}` | Get user by ID |
+| `GET` | `/users/` | List all users |
+
+### Example: Create a User
+```bash
+curl -X POST http://127.0.0.1:8000/users/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "email": "alice@example.com", "password": "securepass123"}'
+```
+
+---
+
 ## 🧪 Testing and Coverage
 
-This project maintains **92% code coverage** across 197 automated tests.
+This project maintains **92%+ code coverage** across 200+ automated tests.
 
 ### Running Tests Locally
 ```bash
-# Run exclusively the shared core / unit tests (164 tests)
+# Run all unit tests (core logic + security + schemas + model)
 pytest tests/unit -v
 
-# Run exclusively CLI interface tests (16 tests)
+# Run CLI interface tests
 pytest tests/cli -v
 
-# Run strictly the FastAPI Integration tests (17 tests)
+# Run FastAPI integration tests (User API + Calculator API)
 pytest tests/fastapi/integration -v
 
+# Run only the new user-related tests
+pytest tests/unit/test_security.py tests/unit/test_schemas.py tests/unit/test_user_model.py tests/fastapi/integration/test_user_api.py -v
+
 # Run the complete unified test suite with Coverage Report
-pytest --cov=app --cov=main --cov-fail-under=90 tests/
+pytest --cov=app --cov=main --cov-report=term-missing tests/
 ```
 
 > **Note**: The E2E tests (`tests/fastapi/e2e/`) require the FastAPI server to be running in a background terminal (`python main.py`) or they will get "Connection Refused". They use Playwright to simulate button clicks natively.
@@ -168,6 +196,31 @@ This script automatically handles the background server startup required for the
 
 ---
 
+## 🐳 Docker Hub
+
+The production Docker image is automatically built and pushed to Docker Hub via the CI/CD pipeline.
+
+- **Docker Hub Repository**: [https://hub.docker.com/r/sairamcharan9/calculator-web-systems](https://hub.docker.com/r/sairamcharan9/calculator-web-systems)
+
+### Pull and Run
+```bash
+docker pull sairamcharan9/calculator-web-systems:latest
+docker run -p 8000:8000 sairamcharan9/calculator-web-systems:latest
+```
+
+---
+
+## 🔄 CI/CD Pipeline
+
+The project uses **GitHub Actions** for continuous integration and deployment:
+
+1. **Test Job**: Runs all unit, integration, CLI, and E2E tests against a PostgreSQL 15 service container.
+2. **Deploy Job**: On successful tests (main branch only), builds and pushes the Docker image to Docker Hub.
+
+The workflow file is located at `.github/workflows/ci.yml`.
+
+---
+
 ## 🗄️ SQL Database Assignment
 
 The project includes a containerized PostgreSQL database integration exercise:
@@ -213,12 +266,17 @@ CALCULATOR_WEB_SYSTEMS/
 │   ├── calculator_repl.py        # REPL interface (Facade)
 │   ├── command_loader.py         # Singleton CommandManager instance
 │   ├── commands.py               # Command registration system
+│   ├── database.py               # SQLAlchemy engine/session setup
 │   ├── exceptions.py             # Custom exception hierarchy
 │   ├── history.py                # History + Observer pattern
 │   ├── input_validators.py       # Input validation (LBYL)
 │   ├── interfaces.py             # Abstract base classes
 │   ├── logger.py                 # Centralized logging
+│   ├── models.py                 # SQLAlchemy User model
 │   ├── operations.py             # 10 arithmetic operations (Strategy)
+│   ├── schemas.py                # Pydantic UserCreate/UserRead schemas
+│   ├── security.py               # Password hashing (bcrypt)
+│   ├── user_routes.py            # User CRUD API endpoints
 │   └── plugins/                  # Dynamically loaded command plugins
 │       ├── greet.py
 │       ├── help.py
@@ -227,20 +285,21 @@ CALCULATOR_WEB_SYSTEMS/
 ├── templates/
 │   └── index.html                # Glassmorphism SPA frontend
 ├── tests/
-│   ├── unit/                     # 164 unit tests
-│   ├── cli/                      # 16 CLI integration tests
+│   ├── unit/                     # Unit tests (core + security + schemas + model)
+│   ├── cli/                      # CLI integration tests
 │   └── fastapi/
-│       ├── integration/          # 17 API tests
-│       └── e2e/                  # 4 Playwright browser tests
+│       ├── integration/          # API integration tests (calculator + users)
+│       └── e2e/                  # Playwright browser tests
 ├── screenshots/                  # UI and SQL assignment screenshots
 ├── main.py                       # FastAPI app + CLI entry point
 ├── Dockerfile                    # Container image definition
 ├── docker-compose.yml            # Multi-service orchestration
+├── .github/workflows/ci.yml      # CI/CD pipeline (test + Docker Hub deploy)
 ├── setup_db.sql                  # SQL assignment script
 ├── requirements.txt              # Python dependencies
 ├── pytest.ini                    # Test configuration
-├── verification.md               # Full project verification report
 ├── reflection.md                 # Assignment reflection
+├── reflection_user_model.md      # Secure user model reflection
 └── sql_assignment_documentation.md
 ```
 
