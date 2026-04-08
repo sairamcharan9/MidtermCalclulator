@@ -22,7 +22,8 @@ def test_api_divide():
 
 def test_api_divide_by_zero():
     response = client.post("/divide", json={"a": "10", "b": "0"})
-    assert "Error" in response.json()["error"]
+    assert "error" in response.json()
+    assert "zero" in response.json()["error"].lower()
 
 def test_api_power():
     response = client.post("/power", json={"a": "2", "b": "4"})

@@ -35,7 +35,9 @@ def execute_math(op_name: str, a: str, b: str):
     res = calculator.process_input(f"calc {op_name} {a} {b}")
     
     if "Error" in res:
-        return {"error": res}
+        # Strip redundant "Error: " prefix for clean API responses
+        clean_msg = res.replace("Error: ", "", 1) if res.startswith("Error: ") else res
+        return {"error": clean_msg}
         
     # Extract only the final result for the Web UI (since REPL usually returns "Result: A + B = C")
     if "=" in res:

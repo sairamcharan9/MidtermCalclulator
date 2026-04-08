@@ -134,8 +134,9 @@
             background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; color: #ccc;
         }
 
-        .success { color: var(--success); }
-        .error { color: var(--error); }
+        .success { color: var(--success) !important; }
+        .error { color: var(--error) !important; }
+        .muted { color: #666; }
     </style>
 </head>
 <body>
@@ -163,7 +164,7 @@
             </div>
             
             <div class="result-box">
-                <span id="result-text" style="color: #666;">Result will appear here...</span>
+                <span id="result-text" class="muted">Result will appear here...</span>
             </div>
         </div>
 
@@ -240,7 +241,7 @@
 
         function updateResultBox(data) {
             if (data.error) {
-                resultBox.innerText = `Error: ${data.error}`;
+                resultBox.innerText = data.error;
                 resultBox.className = 'error';
             } else {
                 resultBox.innerText = data.result;
