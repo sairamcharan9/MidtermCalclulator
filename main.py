@@ -118,6 +118,25 @@ async def read_item(request: Request):
     )
 
 
+@app.get("/register", response_class=HTMLResponse, include_in_schema=False,
+         summary="Registration page")
+async def register_page(request: Request):
+    """Serve the user registration front-end page."""
+    return templates.TemplateResponse(
+        request=request, name="register.html", context={"request": request}
+    )
+
+
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False,
+         summary="Login page")
+async def login_page(request: Request):
+    """Serve the user login front-end page."""
+    return templates.TemplateResponse(
+        request=request, name="login.html", context={"request": request}
+    )
+
+
+
 # ── Arithmetic API ────────────────────────────────────────────────────────
 
 def execute_math(op_name: str, a: str, b: str):

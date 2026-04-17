@@ -14,7 +14,7 @@ A professional-grade, dual-mode Calculator built in Python featuring a full **CL
 - **10 Arithmetic Operations** — Add, Subtract, Multiply, Divide, Power, Root, Modulus, Int Divide, Percent, Abs Diff
 - **Persistent History** — Pandas DataFrame backed by `data/history.csv`; full Undo/Redo via Memento pattern
 - **Memory Commands** — Store, Recall, Clear named memory slots
-- **Secure User Auth** — SQLAlchemy ORM, bcrypt password hashing, Pydantic v2 validation
+- **JWT Authentication** — `/register` + `/login` with bcrypt hashing, `python-jose` JWT (HS256), localStorage token storage
 - **Calculation BREAD API** — Browse, Read, Edit, Add, Delete calculation records
 - **Design Patterns** — Factory, Command, Strategy, Observer, Memento, Facade, Singleton, Plugin
 - **288 Tests, 90%+ Coverage** — Unit, CLI, FastAPI integration, and Playwright E2E tests
@@ -49,6 +49,8 @@ python main.py          # starts uvicorn on http://127.0.0.1:8000
 | URL | Description |
 |-----|-------------|
 | `http://localhost:8000/` | Glassmorphism calculator UI |
+| `http://localhost:8000/register` | **New** — User registration page |
+| `http://localhost:8000/login` | **New** — User login page (stores JWT) |
 | `http://localhost:8000/docs` | Swagger / OpenAPI documentation |
 | `http://localhost:8000/redoc` | ReDoc documentation |
 | `http://localhost:8000/health` | Health check endpoint |
@@ -60,15 +62,16 @@ python main.py          # starts uvicorn on http://127.0.0.1:8000
 curl -X POST http://localhost:8000/add \
   -H "Content-Type: application/json" -d '{"a":"10","b":"5"}'
 
-# Register user
+# Register user → returns {id, username, email, created_at}
 curl -X POST http://localhost:8000/users/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","email":"alice@example.com","password":"secret"}'
+  -d '{"username":"alice","email":"alice@example.com","password":"SecurePass123!"}'
 
-# Login
+# Login → returns {access_token, token_type: "bearer"}
 curl -X POST http://localhost:8000/users/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"secret"}'
+  -d '{"username":"alice","password":"SecurePass123!"}'
+# → {"access_token": "eyJ...", "token_type": "bearer"}
 
 # Create calculation (BREAD)
 curl -X POST http://localhost:8000/calculations/ \
@@ -111,14 +114,27 @@ Goodbye!
 
 ---
 
-## 🔐 User & Calculation API
+## 🔐 JWT Authentication
 
-### User Endpoints
+### How It Works
+
+1. `POST /users/register` — validates with Pydantic, hashes password with bcrypt, stores in DB. Returns `201` with user data.
+2. `POST /users/login` — verifies bcrypt hash; on success, signs an HS256 JWT (30-min expiry) and returns `{"access_token": "...", "token_type": "bearer"}`.
+3. Front-end stores the token in `localStorage` as `auth_token`.
+
+### Front-End Pages
+
+| Page | URL | Client-Side Validation |
+|------|-----|------------------------|
+| Register | `/register` | email regex, min 8-char password, confirm password match |
+| Login | `/login` | non-empty username & password; stores JWT on success |
+
+### User API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/users/register` | Register a new user (bcrypt hashed) |
-| `POST` | `/users/login` | Authenticate (returns user record) |
+| `POST` | `/users/register` | Register a new user — hashes password, returns `UserRead` |
+| `POST` | `/users/login` | Authenticate — returns `{access_token, token_type}` JWT |
 | `GET` | `/users/{id}` | Get user by ID |
 | `GET` | `/users/` | List all users |
 
@@ -146,10 +162,13 @@ pytest tests/cli -v
 # FastAPI integration tests (requires PostgreSQL or SQLite fallback)
 pytest tests/fastapi/integration -v
 
-# E2E Playwright tests (requires running server on :8000)
+# E2E Playwright tests — auth + calculator (requires running server on :8000)
 python main.py &
 playwright install chromium
 TEST_URL=http://localhost:8000 pytest tests/fastapi/e2e -v
+
+# Auth E2E tests only
+TEST_URL=http://localhost:8000 pytest tests/fastapi/e2e -k "register or login" -v
 
 # Full suite with coverage
 pytest tests/unit tests/fastapi/integration tests/cli \
@@ -189,9 +208,14 @@ docker compose up -d --build
 
 ### Docker Hub
 
+🐳 **Repository:** [hub.docker.com/r/sb2853/calculator-web-systems](https://hub.docker.com/r/sb2853/calculator-web-systems)
+
 ```bash
 docker pull sb2853/calculator-web-systems:latest
-docker run -p 8000:8000 sb2853/calculator-web-systems:latest
+docker run -p 8000:8000 \
+  -e JWT_SECRET=your-secret-here \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/db \
+  sb2853/calculator-web-systems:latest
 ```
 
 ---
@@ -263,11 +287,13 @@ CALCULATOR_WEB_SYSTEMS/
 │       ├── calculation_routes.py # Calculation BREAD endpoints
 │       ├── database.py           # SQLAlchemy engine & session
 │       ├── models.py             # User & Calculation ORM models
-│       ├── schemas.py            # Pydantic v2 schemas
-│       ├── security.py           # bcrypt password hashing
-│       └── user_routes.py        # User register/login endpoints
+│       ├── schemas.py            # Pydantic v2 schemas (incl. Token)
+│       ├── security.py           # bcrypt + JWT (python-jose)
+│       └── user_routes.py        # Register (201) / Login (JWT) endpoints
 ├── templates/
-│   └── index.html                # Glassmorphism SPA frontend
+│   ├── index.html                # Glassmorphism calculator SPA
+│   ├── register.html             # Registration page (client-side validation)
+│   └── login.html                # Login page (JWT → localStorage)
 ├── tests/
 │   ├── unit/                     # Unit tests (logic, schemas, security, models)
 │   ├── cli/                      # CLI REPL integration tests
@@ -285,4 +311,21 @@ CALCULATOR_WEB_SYSTEMS/
 
 ---
 
-*Production-ready FastAPI calculator demonstrating enterprise Python architecture — SOLID principles, 10 design patterns, 288 automated tests, full CI/CD pipeline.*
+## 📝 Reflection
+
+### Module 13 — JWT Authentication
+
+**What was implemented:**
+This module added JWT-based authentication to the existing FastAPI calculator. The `/users/login` endpoint now generates an HS256-signed JWT using `python-jose`, and the front-end login page stores it in `localStorage`. Two styled HTML pages (`register.html` and `login.html`) were built matching the existing dark glassmorphism aesthetic, each with full client-side validation. Four Playwright E2E tests were added covering both positive (valid registration, valid login + token check) and negative (short password caught client-side, wrong password caught server-side with 401 UI feedback) scenarios.
+
+**Key challenges:**
+- Integrating `python-jose` alongside `passlib[bcrypt]` required careful dependency pinning (`bcrypt==4.0.1`) to avoid version conflicts.
+- The Playwright negative test for wrong passwords had to explicitly clear `localStorage` state between test runs to avoid cross-test token pollution.
+- The CI environment needed `JWT_SECRET` wired as an env var so the server could sign tokens during the automated test run.
+
+**What was learned:**
+JWT stateless authentication is straightforward to add to a FastAPI app but requires deliberate thought around token expiry, secret management, and the difference between authentication (who you are) vs. authorization (what you can do). The `WWW-Authenticate: Bearer` header on 401 responses aligns the API with RFC 6750.
+
+---
+
+*Production-ready FastAPI calculator demonstrating enterprise Python architecture — SOLID principles, 10 design patterns, JWT authentication, 288+ automated tests, full CI/CD pipeline.*

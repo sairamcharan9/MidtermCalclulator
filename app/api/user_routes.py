@@ -3,7 +3,7 @@ User API Routes
 ===============
 
 CRUD endpoints for User management with secure password handling.
-Includes /register (create) and /login (authenticate) endpoints.
+Includes /register (create) and /login (authenticate + return JWT) endpoints.
 """
 
 import logging
@@ -15,8 +15,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.database import get_db
 from app.api.models import User
-from app.api.schemas import UserCreate, UserLogin, UserRead
-from app.api.security import hash_password, verify_password
+from app.api.schemas import UserCreate, UserLogin, UserRead, Token
+from app.api.security import hash_password, verify_password, create_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user account. Returns 409 if username or email is already taken."""
+    """
+    Register a new user account.
+
+    - Validates email format and uniqueness via Pydantic + DB constraints.
+    - Hashes the password with bcrypt before storing.
+    - Returns 409 if username or email is already taken.
+    - Returns the created user (without password hash).
+    """
     hashed = hash_password(user_data.password)
 
     db_user = User(
@@ -57,19 +64,28 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     return register_user(user_data, db)
 
 
-@router.post("/login", response_model=UserRead)
+@router.post("/login", response_model=Token)
 def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate a user. Returns 401 if credentials are invalid."""
+    """
+    Authenticate a user and return a JWT access token.
+
+    - Looks up user by username.
+    - Verifies bcrypt password hash.
+    - Returns 401 Unauthorized if credentials are invalid.
+    - On success, returns a signed JWT (HS256, 30-min expiry by default).
+    """
     db_user = db.query(User).filter(User.username == credentials.username).first()
 
     if db_user is None or not verify_password(credentials.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    logger.info("User logged in: %s (id=%d)", db_user.username, db_user.id)
-    return db_user
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    logger.info("User logged in: %s (id=%d) — JWT issued", db_user.username, db_user.id)
+    return Token(access_token=access_token, token_type="bearer")
 
 
 @router.get("/{user_id}", response_model=UserRead)

@@ -38,6 +38,13 @@ class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class Token(BaseModel):
+    """JWT token response returned by /login."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+
 # ---------------------------------------------------------------------------
 # Calculation Schemas
 # ---------------------------------------------------------------------------

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Advanced Web Calculator</title>
+    <meta name="description" content="Sign in to the Advanced Web Calculator to access your history and saved calculations.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f0f0f0;
+            --text-muted: #9aa5b4;
+            --btn-accent: #00d2ff;
+            --input-bg: rgba(0, 0, 0, 0.25);
+            --success: #00e676;
+            --error: #ff4d6d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 44px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 32px 64px -16px rgba(0,0,0,0.6);
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #00d2ff, #a8edea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--btn-accent);
+            box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.15);
+        }
+
+        input.invalid {
+            border-color: var(--error);
+            box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.15);
+        }
+
+        .field-error {
+            font-size: 12px;
+            color: var(--error);
+            margin-top: 5px;
+            min-height: 16px;
+            display: none;
+        }
+
+        .field-error.visible { display: block; }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            background: linear-gradient(135deg, #00d2ff, #0097b2);
+            border: none;
+            border-radius: 12px;
+            color: #0a1628;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .alert {
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .alert.visible { display: block; }
+
+        .alert-success {
+            background: rgba(0, 230, 118, 0.12);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(255, 77, 109, 0.12);
+            border: 1px solid rgba(255, 77, 109, 0.3);
+            color: var(--error);
+        }
+
+        .token-display {
+            display: none;
+            margin-top: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .token-display.visible { display: block; }
+
+        .token-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .token-value {
+            font-size: 11px;
+            color: #00d2ff;
+            word-break: break-all;
+            line-height: 1.5;
+            font-family: 'Courier New', monospace;
+        }
+
+        .divider {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .divider a {
+            color: var(--btn-accent);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .divider a:hover { opacity: 0.8; }
+
+        .calc-link {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .calc-link a {
+            color: rgba(0, 210, 255, 0.7);
+            text-decoration: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(10, 22, 40, 0.3);
+            border-top-color: #0a1628;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">🔐</div>
+        <h1>Welcome Back</h1>
+        <p class="subtitle">Sign in to your calculator account</p>
+
+        <!-- Status messages -->
+        <div id="alert-success" class="alert alert-success" role="alert"></div>
+        <div id="alert-error" class="alert alert-error" role="alert" id="login-error-msg"></div>
+
+        <form id="login-form" novalidate>
+            <div class="form-group">
+                <label for="login-username">Username</label>
+                <input
+                    type="text"
+                    id="login-username"
+                    name="username"
+                    placeholder="Your username"
+                    autocomplete="username"
+                    aria-required="true"
+                >
+                <div class="field-error" id="username-error">Please enter your username.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input
+                    type="password"
+                    id="login-password"
+                    name="password"
+                    placeholder="Your password"
+                    autocomplete="current-password"
+                    aria-required="true"
+                >
+                <div class="field-error" id="password-error">Please enter your password.</div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="login-btn">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Token preview (shown after successful login) -->
+        <div class="token-display" id="token-display">
+            <div class="token-label">🔑 JWT Access Token (stored in localStorage)</div>
+            <div class="token-value" id="token-value"></div>
+        </div>
+
+        <div class="divider">
+            Don't have an account? <a href="/register">Register</a>
+        </div>
+        <div class="calc-link">
+            <a href="/">← Back to Calculator</a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('login-form');
+        const usernameInput = document.getElementById('login-username');
+        const passwordInput = document.getElementById('login-password');
+        const submitBtn = document.getElementById('login-btn');
+        const alertSuccess = document.getElementById('alert-success');
+        const alertError = document.getElementById('alert-error');
+        const tokenDisplay = document.getElementById('token-display');
+        const tokenValue = document.getElementById('token-value');
+
+        // ── Helpers ────────────────────────────────────────────────────────
+        function showError(inputEl, errorId) {
+            inputEl.classList.add('invalid');
+            document.getElementById(errorId).classList.add('visible');
+        }
+
+        function clearError(inputEl, errorId) {
+            inputEl.classList.remove('invalid');
+            document.getElementById(errorId).classList.remove('visible');
+        }
+
+        function showAlert(type, message) {
+            alertSuccess.classList.remove('visible');
+            alertError.classList.remove('visible');
+            if (type === 'success') {
+                alertSuccess.textContent = message;
+                alertSuccess.classList.add('visible');
+            } else {
+                alertError.textContent = message;
+                alertError.classList.add('visible');
+            }
+        }
+
+        // ── Real-time validation ───────────────────────────────────────────
+        usernameInput.addEventListener('blur', () => {
+            if (!usernameInput.value.trim())
+                showError(usernameInput, 'username-error');
+            else
+                clearError(usernameInput, 'username-error');
+        });
+
+        passwordInput.addEventListener('blur', () => {
+            if (!passwordInput.value)
+                showError(passwordInput, 'password-error');
+            else
+                clearError(passwordInput, 'password-error');
+        });
+
+        // ── Form submit ────────────────────────────────────────────────────
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            // Client-side validation
+            let hasError = false;
+            if (!username) {
+                showError(usernameInput, 'username-error');
+                hasError = true;
+            } else {
+                clearError(usernameInput, 'username-error');
+            }
+
+            if (!password) {
+                showError(passwordInput, 'password-error');
+                hasError = true;
+            } else {
+                clearError(passwordInput, 'password-error');
+            }
+
+            if (hasError) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span>Signing in…';
+            tokenDisplay.classList.remove('visible');
+
+            try {
+                const response = await fetch('/users/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store JWT in localStorage
+                    localStorage.setItem('auth_token', data.access_token);
+
+                    showAlert('success', `✅ Signed in successfully! Your session is active.`);
+
+                    // Show truncated token preview
+                    const preview = data.access_token.substring(0, 60) + '…';
+                    tokenValue.textContent = preview;
+                    tokenDisplay.classList.add('visible');
+
+                    // Redirect to calculator after 2s
+                    setTimeout(() => { window.location.href = '/'; }, 2000);
+
+                } else if (response.status === 401) {
+                    // Invalid credentials — display UI error
+                    showAlert('error', '❌ Invalid credentials. Please check your username and password.');
+                    passwordInput.value = '';
+                } else {
+                    const msg = data.detail || 'Login failed. Please try again.';
+                    showAlert('error', `❌ ${msg}`);
+                }
+
+            } catch (err) {
+                showAlert('error', '❌ Network error. Please check your connection.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+
+        // ── Check for existing token ───────────────────────────────────────
+        const existingToken = localStorage.getItem('auth_token');
+        if (existingToken) {
+            showAlert('success', '✅ You are already signed in. Redirecting…');
+            setTimeout(() => { window.location.href = '/'; }, 1500);
+        }
+    </script>
+</body>
+</html>
