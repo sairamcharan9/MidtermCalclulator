@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Calculation, CalculationModelFactory, User
-from app.schemas import CalculationCreate, CalculationRead, CalculationUpdate
+from app.schemas import CalculationRequest, CalculationRead, CalculationUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def read_calculation(calculation_id: int, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 @router.post("/", response_model=CalculationRead, status_code=status.HTTP_201_CREATED)
-def add_calculation(payload: CalculationCreate, db: Session = Depends(get_db)):
+def add_calculation(payload: CalculationRequest, db: Session = Depends(get_db)):
     """
     Create a new calculation record.
 

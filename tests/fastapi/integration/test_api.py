@@ -3,7 +3,13 @@ from main import app
 
 client = TestClient(app)
 
+def test_health_check():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
 def test_api_add():
+
     response = client.post("/add", json={"a": "2", "b": "3"})
     assert response.status_code == 200
     assert "5" in response.json()["result"]

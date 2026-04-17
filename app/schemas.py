@@ -3,11 +3,16 @@ Pydantic Schemas
 ================
 
 Defines request/response schemas for User and Calculation operations.
+
+Design notes:
+- CalculationCreate: pure schema for validation logic (no user_id).
+- CalculationRequest: HTTP body for POST /calculations (adds user_id).
+- CalculationUpdate: HTTP body for PUT /calculations/{id} (a, b, type only).
+- UserLogin: HTTP body for POST /users/login.
 """
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, model_validator
 
@@ -75,19 +80,19 @@ class OperationType(str, Enum):
 
 class CalculationCreate(BaseModel):
     """
-    Schema for validating incoming calculation requests.
-    Validates operand types, operation type enum, and division by zero.
+    Core schema for validating incoming calculation data.
+
+    This schema is used for unit tests and as the base for HTTP request bodies.
+    It validates operand types, operation type enum, and blocks division by zero.
 
     Fields:
         a: First operand.
         b: Second operand.
         type: Arithmetic operation (ADD, SUBTRACT, MULTIPLY, DIVIDE, INT_DIVIDE).
-        user_id: ID of the user who owns this calculation.
     """
     a: float
     b: float
     type: OperationType
-    user_id: int
 
     @model_validator(mode='after')
     def check_division_by_zero(self):
@@ -96,10 +101,25 @@ class CalculationCreate(BaseModel):
         return self
 
 
+class CalculationRequest(CalculationCreate):
+    """
+    HTTP request body for POST /calculations.
+
+    Extends CalculationCreate with user_id, which identifies the owner.
+    Division-by-zero validation is inherited from CalculationCreate.
+
+    Fields:
+        user_id: ID of the user creating this calculation.
+    """
+    user_id: int
+
+
 class CalculationUpdate(BaseModel):
     """
-    Schema for updating an existing calculation (PUT).
+    HTTP request body for PUT /calculations/{id}.
+
     All fields are required; the result is recomputed server-side.
+    user_id is NOT updatable via PUT (preserved from the original record).
 
     Fields:
         a: Updated first operand.
@@ -130,4 +150,3 @@ class CalculationRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

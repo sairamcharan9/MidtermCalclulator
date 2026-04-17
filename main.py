@@ -1,164 +1,273 @@
+"""
+Advanced Web Calculator — FastAPI Application
+==============================================
+
+Entry point for the web application.  Registers all routers, creates
+database tables on startup, and exposes a health-check endpoint.
+"""
+
 import logging
 import os
 from contextlib import asynccontextmanager
-from decimal import Decimal
+
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+
 from app.calculator_factory import CalculatorFactory
 from app.database import engine, Base
 from app.user_routes import router as user_router
 from app.calculation_routes import router as calc_router
 
-logging.basicConfig(level=logging.INFO)
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# App Lifespan
+# ---------------------------------------------------------------------------
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create database tables on startup."""
+    """Create database tables on startup, log on shutdown."""
     Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully.")
+    logger.info("Database tables created / verified successfully.")
     yield
+    logger.info("Application shutting down.")
 
 
-app = FastAPI(title="Advanced Web Calculator", lifespan=lifespan)
+# ---------------------------------------------------------------------------
+# FastAPI Instance
+# ---------------------------------------------------------------------------
+
+app = FastAPI(
+    title="Advanced Web Calculator",
+    description=(
+        "A full-featured calculator API with persistent history, "
+        "user authentication, and arithmetic BREAD operations."
+    ),
+    version="2.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# ---------------------------------------------------------------------------
+# CORS (dev-friendly; tighten origins list for production)
+# ---------------------------------------------------------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------------------------------------------------------------------
+# Security Headers Middleware
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# ---------------------------------------------------------------------------
+# Router Registration
+# ---------------------------------------------------------------------------
+
 app.include_router(user_router)
 app.include_router(calc_router)
+
+# ---------------------------------------------------------------------------
+# Templates & Calculator Core
+# ---------------------------------------------------------------------------
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
 
-# Initialize the rich calculator core (handles history, undo/redo, memory, observers)
+# In-memory calculator core (history, undo/redo, memory, observers)
 calculator = CalculatorFactory.create_calculator()
+
+
+# ---------------------------------------------------------------------------
+# Shared Pydantic Models (for simple math API)
+# ---------------------------------------------------------------------------
 
 class Numbers(BaseModel):
     a: str
-    b: str = "0"  # Default 0 for unary operations or if left blank
+    b: str = "0"  # default 0 for unary or missing second operand
+
 
 class SingleInput(BaseModel):
     value: str = ""
 
-@app.get("/", response_class=HTMLResponse)
+
+# ---------------------------------------------------------------------------
+# Health Check
+# ---------------------------------------------------------------------------
+
+@app.get("/health", tags=["system"], summary="Health check")
+def health_check():
+    """Returns 200 OK when the service is running."""
+    return {"status": "ok", "version": app.version}
+
+
+# ---------------------------------------------------------------------------
+# Frontend
+# ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def read_item(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={"request": request})
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"request": request}
+    )
+
+
+# ---------------------------------------------------------------------------
+# Arithmetic API (simple string-based, delegates to calculator core)
+# ---------------------------------------------------------------------------
 
 def execute_math(op_name: str, a: str, b: str):
-    logger.info(f"API Executing {op_name} {a} {b}")
-    # Process through the CLI repl logic directly to trigger history and observers
+    logger.info("API %s %s %s", op_name, a, b)
     res = calculator.process_input(f"calc {op_name} {a} {b}")
-    
+
     if "Error" in res:
-        # Strip redundant "Error: " prefix for clean API responses
         clean_msg = res.replace("Error: ", "", 1) if res.startswith("Error: ") else res
         return {"error": clean_msg}
-        
-    # Extract only the final result for the Web UI (since REPL usually returns "Result: A + B = C")
+
     if "=" in res:
         final_val = res.split("=")[-1].strip()
         return {"result": final_val}
-        
+
     return {"result": res}
 
-@app.post("/add")
+
+@app.post("/add", tags=["arithmetic"])
 def api_add(numbers: Numbers):
     return execute_math("add", numbers.a, numbers.b)
 
-@app.post("/subtract")
+
+@app.post("/subtract", tags=["arithmetic"])
 def api_subtract(numbers: Numbers):
     return execute_math("subtract", numbers.a, numbers.b)
 
-@app.post("/multiply")
+
+@app.post("/multiply", tags=["arithmetic"])
 def api_multiply(numbers: Numbers):
     return execute_math("multiply", numbers.a, numbers.b)
 
-@app.post("/divide")
+
+@app.post("/divide", tags=["arithmetic"])
 def api_divide(numbers: Numbers):
     return execute_math("divide", numbers.a, numbers.b)
 
-@app.post("/power")
+
+@app.post("/power", tags=["arithmetic"])
 def api_power(numbers: Numbers):
     return execute_math("power", numbers.a, numbers.b)
 
-@app.post("/root")
+
+@app.post("/root", tags=["arithmetic"])
 def api_root(numbers: Numbers):
     return execute_math("root", numbers.a, numbers.b)
 
-@app.post("/modulus")
+
+@app.post("/modulus", tags=["arithmetic"])
 def api_modulus(numbers: Numbers):
     return execute_math("modulus", numbers.a, numbers.b)
 
-@app.post("/int_divide")
+
+@app.post("/int_divide", tags=["arithmetic"])
 def api_int_divide(numbers: Numbers):
     return execute_math("int_divide", numbers.a, numbers.b)
 
-@app.post("/percent")
+
+@app.post("/percent", tags=["arithmetic"])
 def api_percent(numbers: Numbers):
     return execute_math("percent", numbers.a, numbers.b)
 
-@app.post("/abs_diff")
+
+@app.post("/abs_diff", tags=["arithmetic"])
 def api_abs_diff(numbers: Numbers):
     return execute_math("abs_diff", numbers.a, numbers.b)
 
-# --- ADVANCED COMMANDS EXPOSED AS APIs ---
 
-@app.post("/memory/store")
+# ---------------------------------------------------------------------------
+# Memory & History API
+# ---------------------------------------------------------------------------
+
+@app.post("/memory/store", tags=["memory"])
 def api_memory_store(inp: SingleInput):
     val = inp.value if inp.value else "0"
-    logger.info(f"API Memory Store: value={val}")
+    logger.info("API Memory Store: value=%s", val)
     res = calculator.process_input(f"memory store mem {val}")
     return {"result": res}
 
-@app.get("/memory/recall")
+
+@app.get("/memory/recall", tags=["memory"])
 def api_mem_recall():
-    logger.info("API Executing memory recall")
     res = calculator.process_input("memory recall mem")
     if "not found" in res.lower() or "Error" in res:
         return {"error": res}
-    # Extract numerical value format: "Memory 'mem': 999" -> "999"
     if ":" in res:
-        final_val = res.split(":")[-1].strip()
-        return {"result": final_val}
+        return {"result": res.split(":")[-1].strip()}
     return {"result": res}
 
-@app.post("/memory/clear")
+
+@app.post("/memory/clear", tags=["memory"])
 def api_memory_clear():
-    logger.info("API Memory Clear")
     res = calculator.process_input("memory clear")
     return {"result": res}
 
-@app.get("/history")
+
+@app.get("/history", tags=["history"])
 def api_history():
-    logger.info("API History View")
     res = calculator.process_input("history")
     return {"result": res}
 
-@app.post("/history/clear")
+
+@app.post("/history/clear", tags=["history"])
 def api_history_clear():
-    logger.info("API History Clear")
     res = calculator.process_input("clear")
     return {"result": res}
 
-@app.post("/undo")
+
+@app.post("/undo", tags=["history"])
 def api_undo():
-    logger.info("API Undo")
     res = calculator.process_input("undo")
     return {"result": res}
 
-@app.post("/redo")
+
+@app.post("/redo", tags=["history"])
 def api_redo():
-    logger.info("API Redo")
     res = calculator.process_input("redo")
     return {"result": res}
 
+
+# ---------------------------------------------------------------------------
+# Entrypoint
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     import sys
+    import uvicorn
 
     if "--cli" in sys.argv:
-        # Run as interactive CLI (REPL) calculator
         calculator.run()
     else:
-        # Run as web application (default)
-        import uvicorn
         uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
