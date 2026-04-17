@@ -1,12 +1,33 @@
-logs/
-data/
-venv/
-__pycache__/
-.pytest_cache/
-*.db
-.env
-.coverage
-_test_err.txt
+# Version control
 .git/
 .github/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Runtime-generated directories (created at startup)
+logs/
+data/
+
+# Database artifacts
+*.db
+
+# Environment / secrets
+.env
+
+# Test files (not needed in the image)
+tests/
+
+# Dev artifacts
+_test_err.txt
 screenshots/
+sql_assignment_documentation.pdf
+pgadmin_servers.json
+setup_db.sql
+run_tests_internal.sh

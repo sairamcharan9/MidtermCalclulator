@@ -85,3 +85,10 @@ logs/
 # Temporary test output
 _test_err.txt
 tracked_files.txt
+
+# Assignment submission artifacts (not part of the application)
+screenshots/
+pgadmin_servers.json
+setup_db.sql
+sql_assignment_documentation.pdf
+run_tests_internal.sh

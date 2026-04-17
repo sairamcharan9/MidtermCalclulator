@@ -9,23 +9,19 @@ WORKDIR /app
 # ── Environment ─────────────────────────────────────────────────────────────
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PLAYWRIGHT_BROWSERS_PATH=/app/.ms-playwright
+    PYTHONUNBUFFERED=1
 
-# ── System dependencies (for Playwright + psycopg2) ──────────────────────────
-# Install build dependencies, then clean up in the same layer to keep image lean
+# ── System dependencies (for psycopg2) ────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Python dependencies ──────────────────────────────────────────────────────
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
- && python -m playwright install chromium \
- && python -m playwright install-deps chromium
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Runtime directories ──────────────────────────────────────────────────────
-RUN mkdir -p logs data $PLAYWRIGHT_BROWSERS_PATH \
+RUN mkdir -p logs data \
  && chown -R appuser:appgroup /app
 
 # ── Application source ───────────────────────────────────────────────────────

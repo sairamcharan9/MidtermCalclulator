@@ -1,6 +1,6 @@
 from decimal import Decimal
 import pytest
-from app.input_validators import validate_input_parts, validate_numeric
+from app.cli.input_validators import validate_input_parts, validate_numeric
 
 class TestInputValidators:
     # Test cases for validate_input_parts

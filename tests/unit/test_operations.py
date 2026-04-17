@@ -12,9 +12,9 @@ import logging
 from decimal import Decimal
 
 from app import load_plugins
-from app.command_loader import command_manager
-from app.exceptions import DivisionByZeroError, InvalidOperationError
-from app.operations import (
+from app.cli.command_loader import command_manager
+from app.core.exceptions import DivisionByZeroError, InvalidOperationError
+from app.cli.operations import (
     add,
     subtract,
     multiply,

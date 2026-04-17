@@ -10,10 +10,10 @@ import pytest
 import pandas as pd
 from decimal import Decimal
 
-from app.calculation import Calculation
-from app.operations import add, subtract
-from app.history import CalculationHistory
-from app.calculator_memento import CalculatorMemento, MementoCaretaker
+from app.cli.calculation import Calculation
+from app.cli.operations import add, subtract
+from app.cli.history import CalculationHistory
+from app.cli.calculator_memento import CalculatorMemento, MementoCaretaker
 
 
 # ---------------------------------------------------------------------------

@@ -4,9 +4,9 @@ import pytest
 from decimal import Decimal
 
 from app import load_plugins
-from app.calculation import Calculation
-from app.operations import add, subtract, multiply, divide
-from app.command_loader import command_manager
+from app.cli.calculation import Calculation
+from app.cli.operations import add, subtract, multiply, divide
+from app.cli.command_loader import command_manager
  
 @pytest.fixture(scope="session")
 def load_app_plugins():

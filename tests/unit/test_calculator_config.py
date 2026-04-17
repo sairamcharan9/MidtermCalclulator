@@ -9,8 +9,8 @@ boolean/integer/float parsing, and error handling.
 import os
 import pytest
 
-from app.calculator_config import CalculatorConfig
-from app.exceptions import ConfigurationError
+from app.cli.calculator_config import CalculatorConfig
+from app.core.exceptions import ConfigurationError
 
 
 # ---------------------------------------------------------------------------

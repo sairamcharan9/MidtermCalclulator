@@ -2,7 +2,7 @@
 Advanced Web Calculator — FastAPI Application
 ==============================================
 
-Entry point for the web application.  Registers all routers, creates
+Entry point for the web application. Registers all routers, creates
 database tables on startup, and exposes a health-check endpoint.
 """
 
@@ -12,19 +12,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from app.calculator_factory import CalculatorFactory
-from app.database import engine, Base
-from app.user_routes import router as user_router
-from app.calculation_routes import router as calc_router
+# ── Canonical sub-package imports ──────────────────────────────────────────
+from app.cli.calculator_factory import CalculatorFactory
+from app.api.database import engine, Base
+from app.api.user_routes import router as user_router
+from app.api.calculation_routes import router as calc_router
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-
+# ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -32,9 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# App Lifespan
-# ---------------------------------------------------------------------------
+# ── App Lifespan ──────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,9 +41,7 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutting down.")
 
 
-# ---------------------------------------------------------------------------
-# FastAPI Instance
-# ---------------------------------------------------------------------------
+# ── FastAPI Instance ──────────────────────────────────────────────────────
 
 app = FastAPI(
     title="Advanced Web Calculator",
@@ -61,9 +55,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# ---------------------------------------------------------------------------
-# CORS (dev-friendly; tighten origins list for production)
-# ---------------------------------------------------------------------------
+# ── CORS ──────────────────────────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,9 +65,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Security Headers Middleware
-# ---------------------------------------------------------------------------
+# ── Security Headers ──────────────────────────────────────────────────────
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -86,40 +76,32 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-# ---------------------------------------------------------------------------
-# Router Registration
-# ---------------------------------------------------------------------------
+
+# ── Router Registration ───────────────────────────────────────────────────
 
 app.include_router(user_router)
 app.include_router(calc_router)
 
-# ---------------------------------------------------------------------------
-# Templates & Calculator Core
-# ---------------------------------------------------------------------------
+# ── Templates & Calculator Core ───────────────────────────────────────────
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
 
-# In-memory calculator core (history, undo/redo, memory, observers)
 calculator = CalculatorFactory.create_calculator()
 
 
-# ---------------------------------------------------------------------------
-# Shared Pydantic Models (for simple math API)
-# ---------------------------------------------------------------------------
+# ── Shared Pydantic Models ────────────────────────────────────────────────
 
 class Numbers(BaseModel):
     a: str
-    b: str = "0"  # default 0 for unary or missing second operand
+    b: str = "0"
 
 
 class SingleInput(BaseModel):
     value: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Health Check
-# ---------------------------------------------------------------------------
+# ── Health Check ──────────────────────────────────────────────────────────
 
 @app.get("/health", tags=["system"], summary="Health check")
 def health_check():
@@ -127,9 +109,7 @@ def health_check():
     return {"status": "ok", "version": app.version}
 
 
-# ---------------------------------------------------------------------------
-# Frontend
-# ---------------------------------------------------------------------------
+# ── Frontend ──────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def read_item(request: Request):
@@ -138,22 +118,16 @@ async def read_item(request: Request):
     )
 
 
-# ---------------------------------------------------------------------------
-# Arithmetic API (simple string-based, delegates to calculator core)
-# ---------------------------------------------------------------------------
+# ── Arithmetic API ────────────────────────────────────────────────────────
 
 def execute_math(op_name: str, a: str, b: str):
     logger.info("API %s %s %s", op_name, a, b)
     res = calculator.process_input(f"calc {op_name} {a} {b}")
-
     if "Error" in res:
         clean_msg = res.replace("Error: ", "", 1) if res.startswith("Error: ") else res
         return {"error": clean_msg}
-
     if "=" in res:
-        final_val = res.split("=")[-1].strip()
-        return {"result": final_val}
-
+        return {"result": res.split("=")[-1].strip()}
     return {"result": res}
 
 
@@ -207,9 +181,7 @@ def api_abs_diff(numbers: Numbers):
     return execute_math("abs_diff", numbers.a, numbers.b)
 
 
-# ---------------------------------------------------------------------------
-# Memory & History API
-# ---------------------------------------------------------------------------
+# ── Memory & History API ──────────────────────────────────────────────────
 
 @app.post("/memory/store", tags=["memory"])
 def api_memory_store(inp: SingleInput):
@@ -259,9 +231,7 @@ def api_redo():
     return {"result": res}
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------------------------
+# ── Entrypoint ────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import sys

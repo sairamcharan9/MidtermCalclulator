@@ -11,9 +11,9 @@ from decimal import Decimal
 
 from app import load_plugins
 # Import the operation functions directly for testing Calculation results
-from app.operations import add, subtract, multiply, divide, nth_power, nth_root, modulus, int_divide, percent, abs_diff 
-from app.calculation import Calculation, CalculationFactory
-from app.exceptions import DivisionByZeroError, InvalidOperationError
+from app.cli.operations import add, subtract, multiply, divide, nth_power, nth_root, modulus, int_divide, percent, abs_diff 
+from app.cli.calculation import Calculation, CalculationFactory
+from app.core.exceptions import DivisionByZeroError, InvalidOperationError
 
 load_plugins()
 

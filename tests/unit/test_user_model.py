@@ -7,8 +7,8 @@ Tests the User model structure, columns, and constraints.
 
 import pytest
 from sqlalchemy import inspect
-from app.models import User
-from app.database import Base
+from app.api.models import User
+from app.api.database import Base
 
 
 class TestUserModel:

@@ -8,7 +8,7 @@ Tests UserCreate and UserRead schema validation and serialization.
 import pytest
 from datetime import datetime, timezone
 from pydantic import ValidationError
-from app.schemas import UserCreate, UserRead
+from app.api.schemas import UserCreate, UserRead
 
 
 class TestUserCreateSchema:

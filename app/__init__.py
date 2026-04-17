@@ -1,18 +1,13 @@
 """
 Application Package Initialization
-================================
+===================================
 
-This module initializes the application package and dynamically loads all plugins
-from the `app.plugins` directory. This dynamic loading mechanism is crucial for
-the extensibility of the application, allowing new commands to be added by simply
-creating a new Python file in the plugins directory.
+Initializes the application package and dynamically loads all plugins from
+`app/cli/plugins/`. Dynamic loading ensures that commands registered with
+the `@command` decorator are recognized by the `CommandManager` at startup.
 
-The `load_plugins` function iterates over all modules in the `app.plugins` package,
-importing them to ensure that any commands registered with the `@command`
-decorator are recognized by the `CommandManager`.
-
-This approach ensures that the core application does not need to be modified
-to add new functionality.
+Adding new functionality only requires creating a new Python file in
+`app/cli/plugins/` — no core changes needed.
 """
 
 import os
@@ -20,39 +15,36 @@ import importlib
 import sys
 import logging
 
-from app.logger import get_logger
+from app.core.logger import get_logger
 
-# Initialize the logger for this module
 _log: logging.Logger = get_logger(__name__)
 
 
 def load_plugins() -> None:
     """
-    Dynamically discovers and loads all plugins from the `app.plugins` directory.
+    Dynamically discovers and loads all plugins from `app/cli/plugins/`.
 
-    This function iterates through the files in the `app/plugins` directory,
-    and for each Python file, it constructs the module name and imports it.
-    This process triggers the registration of any commands defined in the plugin
-    files via the `@command` decorator.
+    Also loads arithmetic operations from `app.cli.operations` so that all
+    built-in arithmetic commands are registered before the REPL starts.
     """
-    # Load arithmetic operations
-    module_name = "app.operations"
+    # Load arithmetic operations first (registers add/subtract/multiply/etc.)
+    ops_module = "app.cli.operations"
     try:
-        if module_name in sys.modules:
-            importlib.reload(sys.modules[module_name])
+        if ops_module in sys.modules:
+            importlib.reload(sys.modules[ops_module])
         else:
-            importlib.import_module(module_name)
+            importlib.import_module(ops_module)
         _log.info("Successfully loaded arithmetic operations.")
     except ImportError as e:
         _log.error("Failed to load arithmetic operations: %s", e)
-        
-    plugins_dir = os.path.dirname(__file__) + "/plugins"
+
+    # Discover and load all plugin files from app/cli/plugins/
+    plugins_dir = os.path.join(os.path.dirname(__file__), "cli", "plugins")
     _log.info("Searching for plugins in: %s", plugins_dir)
 
     for filename in os.listdir(plugins_dir):
-        # We are only interested in Python files, and we want to exclude __init__.py
         if filename.endswith(".py") and not filename.startswith("__"):
-            module_name = f"app.plugins.{filename[:-3]}"
+            module_name = f"app.cli.plugins.{filename[:-3]}"
             try:
                 if module_name in sys.modules:
                     importlib.reload(sys.modules[module_name])
@@ -63,7 +55,5 @@ def load_plugins() -> None:
                 _log.error("Failed to load plugin %s: %s", module_name, e)
 
 
-# --- Application-wide Plugin Loading ---
-# Automatically load all plugins when the application package is imported.
-# This ensures that all commands are registered before the application starts.
+# Automatically load all plugins when the application package is first imported.
 load_plugins()

@@ -8,8 +8,8 @@ and the CalculationModelFactory logic.
 
 import pytest
 from pydantic import ValidationError
-from app.schemas import CalculationCreate, OperationType
-from app.models import CalculationModelFactory, Calculation
+from app.api.schemas import CalculationCreate, OperationType
+from app.api.models import CalculationModelFactory, Calculation
 
 
 class TestCalculationCreateSchema:

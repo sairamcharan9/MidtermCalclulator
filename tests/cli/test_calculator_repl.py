@@ -12,9 +12,9 @@ Tests for the Calculator facade class, covering:
 import pytest
 
 from app import load_plugins
-from app.calculator_factory import CalculatorFactory
-from app.calculator_repl import Calculator
-from app.exceptions import CalculationError
+from app.cli.calculator_factory import CalculatorFactory
+from app.cli.calculator_repl import Calculator
+from app.core.exceptions import CalculationError
 
 load_plugins()
 
@@ -167,7 +167,7 @@ class TestCalculatorREPL:
     def test_autoload_logs_on_existing__csv(self, tmp_path) -> None:
         """Auto-load logs INFO when a history CSV already exists on startup."""
         import logging
-        import app.logger as logger_module
+        import app.core.logger as logger_module
 
         env = tmp_path / ".env"
         env.write_text(

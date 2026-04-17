@@ -14,9 +14,9 @@ from unittest.mock import patch, MagicMock
 from decimal import Decimal
 
 from app import load_plugins
-from app.calculator_factory import CalculatorFactory
-from app.calculation import Calculation
-from app.history import LoggingObserver, CalculationHistory
+from app.cli.calculator_factory import CalculatorFactory
+from app.cli.calculation import Calculation
+from app.cli.history import LoggingObserver, CalculationHistory
 
 load_plugins()
 
@@ -33,7 +33,7 @@ def manage_logging_for_tests(tmp_path):
     Fixture to set up and tear down logging for each test.
     This ensures that tests do not interfere with each other's logging state.
     """
-    from app.logger import reconfigure_logging, _is_configured
+    from app.core.logger import reconfigure_logging, _is_configured
     
     # Store original state
     original_is_configured = _is_configured
@@ -57,8 +57,8 @@ def manage_logging_for_tests(tmp_path):
         logger.removeHandler(handler)
         
     # 3. Reset the configuration flag in the logger module
-    import app.logger
-    app.logger._is_configured = original_is_configured
+    import app.core.logger as app_core_logger_module
+    app_core_logger_module._is_configured = original_is_configured
     
     # 4. Restore original handlers if any
     for handler in original_handlers:
@@ -89,15 +89,15 @@ class TestConfigureLogging:
         """Log file and directory should be created if they don't exist."""
         log_dir = tmp_path / "new_logs"
         log_file = log_dir / "app.log"
-        from app.logger import reconfigure_logging
+        from app.core.logger import reconfigure_logging
         reconfigure_logging(log_dir=str(log_dir), log_file=str(log_file), encoding="utf-8")
         assert log_dir.exists()
         assert log_file.exists()
 
     def test_idempotent(self, tmp_path):
         """Calling configure multiple times should not add duplicate handlers."""
-        from app.logger import configure_logging
-        import app.logger
+        from app.core.logger import configure_logging
+        import app.core.logger as app_core_logger_module
         
         # Clear existing handlers from fixture to start with a clean slate
         root = logging.getLogger("calculator")
@@ -105,7 +105,7 @@ class TestConfigureLogging:
             h.close()
             root.removeHandler(h)
         
-        app.logger._is_configured = False # Reset for this specific test
+        app_core_logger_module._is_configured = False # Reset for this specific test
         
         log_dir = str(tmp_path / "logs")
         configure_logging(log_dir=log_dir, log_file="app.log")
@@ -126,7 +126,7 @@ class TestReconfigureLogging:
 
     def test_switches_log_file(self, tmp_path):
         """Reconfiguring should close old handlers and use the new file."""
-        from app.logger import reconfigure_logging
+        from app.core.logger import reconfigure_logging
         
         # Initial config
         log_file1 = tmp_path / "log1.log"
@@ -145,7 +145,7 @@ class TestReconfigureLogging:
 
     def test_handler_count_remains_two(self, tmp_path):
         """Reconfiguring should not add duplicate handlers."""
-        from app.logger import reconfigure_logging
+        from app.core.logger import reconfigure_logging
         logger = logging.getLogger("calculator")
         
         reconfigure_logging(log_dir=str(tmp_path), log_file="f1.log", encoding="utf-8")
@@ -160,13 +160,13 @@ class TestGetLogger:
 
     def test_returns_child_logger(self):
         """get_logger should return a logger that is a child of 'calculator'."""
-        from app.logger import get_logger
+        from app.core.logger import get_logger
         child_logger = get_logger("my_module")
         assert child_logger.name == "calculator.my_module"
 
     def test_child_logger_inherits_parent(self):
         """The child logger should inherit handlers from the parent."""
-        from app.logger import get_logger
+        from app.core.logger import get_logger
         parent_logger = logging.getLogger("calculator")
         child_logger = get_logger("child")
         assert child_logger.propagate is True
@@ -180,7 +180,7 @@ class TestLoggingObserverIntegration:
     def test_observer_logs_to_file(self, tmp_path, sample_add_calc):
         """The LoggingObserver should write to the configured log file."""
         log_file = tmp_path / "observer_test.log"
-        from app.logger import reconfigure_logging
+        from app.core.logger import reconfigure_logging
         reconfigure_logging(log_dir=str(tmp_path), log_file=str(log_file), encoding="utf-8")
 
         history = CalculationHistory()

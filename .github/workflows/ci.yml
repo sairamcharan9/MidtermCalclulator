@@ -41,10 +41,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps chromium
+        run: pip install -r requirements.txt
 
       # ── Unit tests (no DB required, fast feedback) ──────────────────────
       - name: Run Unit Tests
@@ -58,6 +55,12 @@ jobs:
       - name: Run FastAPI Integration Tests
         run: pytest tests/fastapi/integration -v
 
+      # ── Install Playwright only for E2E step ────────────────────────────
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+
       # ── Start app for E2E ────────────────────────────────────────────────
       - name: Start application for E2E tests
         run: |
@@ -68,7 +71,7 @@ jobs:
           done
 
       # ── E2E browser tests ─────────────────────────────────────────────────
-      - name: Run FastAPI End-to-End Tests
+      - name: Run E2E Browser Tests
         run: TEST_URL=http://localhost:8000 pytest tests/fastapi/e2e -v
 
       # ── Coverage report ──────────────────────────────────────────────────
@@ -77,9 +80,9 @@ jobs:
           pytest --cov=app --cov=main \
                  --cov-report=term-missing \
                  --cov-report=xml \
-                 tests/unit tests/fastapi/integration
+                 tests/unit tests/fastapi/integration tests/cli
 
-      - name: Upload Coverage Report
+      - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
         with:

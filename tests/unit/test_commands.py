@@ -9,8 +9,8 @@ and the dynamic loading of plugins.
 
 import pytest
 from app import load_plugins
-from app.command_loader import command_manager
-from app.plugins.greet import greet_command
+from app.cli.command_loader import command_manager
+from app.cli.plugins.greet import greet_command
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
@@ -23,8 +23,8 @@ def mock_handler(*args, **kwargs):
 
 def test_command_manager_singleton():
     """Verify that the CommandManager is a singleton."""
-    from app.command_loader import command_manager as cm1
-    from app.command_loader import command_manager as cm2
+    from app.cli.command_loader import command_manager as cm1
+    from app.cli.command_loader import command_manager as cm2
     assert cm1 is cm2, "CommandManager should be a singleton"
 
 def test_register_and_get_command():

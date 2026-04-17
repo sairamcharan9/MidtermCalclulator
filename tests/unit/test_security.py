@@ -6,7 +6,7 @@ Tests hash_password and verify_password functions.
 """
 
 import pytest
-from app.security import hash_password, verify_password
+from app.api.security import hash_password, verify_password
 
 
 class TestHashPassword:

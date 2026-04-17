@@ -12,10 +12,10 @@ from unittest.mock import MagicMock, patch
 from decimal import Decimal
 import pandas as pd
 
-from app.operations import add, subtract
+from app.cli.operations import add, subtract
 from app import load_plugins
-from app.calculation import Calculation
-from app.history import (
+from app.cli.calculation import Calculation
+from app.cli.history import (
     CalculationHistory,
     LoggingObserver,
     AutoSaveObserver,
@@ -115,7 +115,7 @@ class TestLoggingObserver:
     Tests for the logging observer.
     """
 
-    @patch("app.history.get_logger")
+    @patch("app.cli.history.get_logger")
     def test_logs_calculation(self, mock_get_logger, sample_calc: Calculation):
         """
         Test that the LoggingObserver logs the calculation.

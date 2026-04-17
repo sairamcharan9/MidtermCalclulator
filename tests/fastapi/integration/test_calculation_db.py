@@ -12,8 +12,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.exc import IntegrityError
 
-from app.database import Base
-from app.models import User, Calculation, CalculationModelFactory
+from app.api.database import Base
+from app.api.models import User, Calculation, CalculationModelFactory
 
 
 # Setup a clean in-memory database for testing database interactions directly
