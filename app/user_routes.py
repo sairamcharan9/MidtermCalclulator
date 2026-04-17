@@ -3,6 +3,7 @@ User API Routes
 ===============
 
 CRUD endpoints for User management with secure password handling.
+Includes /register (create) and /login (authenticate) endpoints.
 """
 
 import logging
@@ -14,22 +15,26 @@ from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate, UserRead
-from app.security import hash_password
+from app.schemas import UserCreate, UserLogin, UserRead
+from app.security import hash_password, verify_password
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """
-    Create a new user with a hashed password.
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
 
-    Returns 409 if the username or email already exists.
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """
-    # Hash the password before storing
+    Register a new user account.
+
+    Hashes the supplied password with bcrypt before persisting.
+    Returns 409 if the username or email is already taken.
+    """
     hashed = hash_password(user_data.password)
 
     db_user = User(
@@ -49,9 +54,45 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Username or email already exists.",
         )
 
-    logger.info("Created user: %s (id=%d)", db_user.username, db_user.id)
+    logger.info("Registered user: %s (id=%d)", db_user.username, db_user.id)
     return db_user
 
+
+# Keep the old POST /users/ route alive so existing tests don't break
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED,
+             include_in_schema=False)
+def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+    """Legacy alias for /register — kept for backward compatibility."""
+    return register_user(user_data, db)
+
+
+# ---------------------------------------------------------------------------
+# Login
+# ---------------------------------------------------------------------------
+
+@router.post("/login", response_model=UserRead)
+def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
+    """
+    Authenticate a user with username + password.
+
+    Returns the user record on success.
+    Returns 401 if the username does not exist or the password is incorrect.
+    """
+    db_user = db.query(User).filter(User.username == credentials.username).first()
+
+    if db_user is None or not verify_password(credentials.password, db_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password.",
+        )
+
+    logger.info("User logged in: %s (id=%d)", db_user.username, db_user.id)
+    return db_user
+
+
+# ---------------------------------------------------------------------------
+# Read / List (existing)
+# ---------------------------------------------------------------------------
 
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(user_id: int, db: Session = Depends(get_db)):

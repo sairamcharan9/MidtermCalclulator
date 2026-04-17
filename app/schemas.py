@@ -2,12 +2,19 @@
 Pydantic Schemas
 ================
 
-Defines request/response schemas for User operations.
+Defines request/response schemas for User and Calculation operations.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr
+from enum import Enum
+from typing import Optional
 
+from pydantic import BaseModel, ConfigDict, EmailStr, model_validator
+
+
+# ---------------------------------------------------------------------------
+# User Schemas
+# ---------------------------------------------------------------------------
 
 class UserCreate(BaseModel):
     """
@@ -20,6 +27,18 @@ class UserCreate(BaseModel):
     """
     username: str
     email: EmailStr
+    password: str
+
+
+class UserLogin(BaseModel):
+    """
+    Schema for user login requests.
+
+    Fields:
+        username: The account username.
+        password: The plain-text password to verify.
+    """
+    username: str
     password: str
 
 
@@ -42,9 +61,9 @@ class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-from enum import Enum
-from pydantic import model_validator
-
+# ---------------------------------------------------------------------------
+# Calculation Schemas
+# ---------------------------------------------------------------------------
 
 class OperationType(str, Enum):
     ADD = "ADD"
@@ -58,6 +77,34 @@ class CalculationCreate(BaseModel):
     """
     Schema for validating incoming calculation requests.
     Validates operand types, operation type enum, and division by zero.
+
+    Fields:
+        a: First operand.
+        b: Second operand.
+        type: Arithmetic operation (ADD, SUBTRACT, MULTIPLY, DIVIDE, INT_DIVIDE).
+        user_id: ID of the user who owns this calculation.
+    """
+    a: float
+    b: float
+    type: OperationType
+    user_id: int
+
+    @model_validator(mode='after')
+    def check_division_by_zero(self):
+        if self.type in (OperationType.DIVIDE, OperationType.INT_DIVIDE) and self.b == 0:
+            raise ValueError("Cannot divide by zero")
+        return self
+
+
+class CalculationUpdate(BaseModel):
+    """
+    Schema for updating an existing calculation (PUT).
+    All fields are required; the result is recomputed server-side.
+
+    Fields:
+        a: Updated first operand.
+        b: Updated second operand.
+        type: Updated arithmetic operation.
     """
     a: float
     b: float
@@ -65,7 +112,6 @@ class CalculationCreate(BaseModel):
 
     @model_validator(mode='after')
     def check_division_by_zero(self):
-        # self is the instantiated model 
         if self.type in (OperationType.DIVIDE, OperationType.INT_DIVIDE) and self.b == 0:
             raise ValueError("Cannot divide by zero")
         return self
@@ -84,3 +130,4 @@ class CalculationRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+

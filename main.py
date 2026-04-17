@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.calculator_factory import CalculatorFactory
 from app.database import engine, Base
 from app.user_routes import router as user_router
+from app.calculation_routes import router as calc_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Advanced Web Calculator", lifespan=lifespan)
 app.include_router(user_router)
+app.include_router(calc_router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
