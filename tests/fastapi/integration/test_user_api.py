@@ -143,12 +143,12 @@ class TestLoginUser:
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["username"] == "charlie"
-        assert data["email"] == "charlie@example.com"
-        assert "id" in data
-        # password must NOT appear in the response
-        assert "password_hash" not in data
-        assert "password" not in data
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        # Since it's a JWT, let's verify we can decode it
+        from app.api.security import decode_access_token
+        payload = decode_access_token(data["access_token"])
+        assert "sub" in payload
 
     def test_login_wrong_password_returns_401(self):
         """Login with incorrect password returns 401."""
@@ -183,7 +183,12 @@ class TestLoginUser:
             "password": "pass123",
         })
         assert login.status_code == 200
-        assert login.json()["id"] == registered_id
+        data = login.json()
+        assert "access_token" in data
+        
+        from app.api.security import decode_access_token
+        payload = decode_access_token(data["access_token"])
+        assert payload["sub"] == str(registered_id)
 
 
 # ---------- Get / List Tests (unchanged) ----------
