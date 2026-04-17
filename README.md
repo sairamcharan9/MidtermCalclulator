@@ -185,6 +185,7 @@ docker compose up -d --build
 |---------|------|-----|
 | FastAPI app | 8000 | http://localhost:8000 |
 | PostgreSQL | 5432 | — |
+| pgAdmin 4 | 5050 | http://localhost:5050 |
 
 ### Docker Hub
 
